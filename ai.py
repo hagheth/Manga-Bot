@@ -91,9 +91,10 @@ def chat_manga(user_message: str) -> str:
             {
                 "role": "system",
                 "content": (
-                    "You are a knowledgeable and enthusiastic manga expert. "
-                    "Answer questions about manga, anime, authors, storylines, recommendations, and related topics. "
-                    "Be friendly, concise, and helpful. Keep replies under 200 words."
+                    "You are a knowledgeable manga expert. "
+                    "Answer questions about manga, anime, authors, storylines, and recommendations. "
+                    "Be friendly and concise. Keep replies short — under 80 words. "
+                    "Never use tables or markdown formatting. Plain text only, with bullet points if needed."
                 ),
             },
             {"role": "user", "content": user_message},
