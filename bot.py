@@ -372,7 +372,7 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     except Exception as e:
         logger.error(f"Echo handler error: {e}")
-        await thinking.edit_text("❌ Something went wrong. Try again.")
+        await thinking.edit_text(f"❌ Error: {e}")
 
 
 async def confirm_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -448,7 +448,7 @@ async def execute_action(update: Update, context: ContextTypes.DEFAULT_TYPE, par
     else:
         msg = f"🤔 {parsed.get('reply', 'I am not sure what you mean.')}\n\nTry: \"I'm reading One Piece ch1120\" or \"show my list\""
 
-    await update.message.reply_text(msg, disable_web_page_preview=True)
+    await update.message.reply_text(msg, parse_mode="Markdown", disable_web_page_preview=True)
 
 
 async def execute_action_data(parsed: dict, mangas: list, user_id: int) -> str:
