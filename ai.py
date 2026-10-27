@@ -43,6 +43,7 @@ Rules:
 - Extract chapter numbers from phrases like "chapter 1234", "ch1234", "until c1234", "ep 5"
 - Detect status from phrases like "finished", "done", "completed", "dropped", "on hold", "paused", "currently reading"
 - If user says "I've read X until chapter Y" or "I'm reading X at chY" → intent is always "update_chapter" (the bot will auto-add if not found)
+- If user sends a URL with a chapter number (e.g. "https://... read till chapter 100") → intent is "update_chapter", extract url and chapter
 - If user says "I've read X" with no chapter → intent is "add" with status "reading"
 - If user says "I finished X" or "I completed X" → intent is "update_status" with status "completed", only if manga likely exists; otherwise "add" with status "completed"
 - Keep reply short and friendly, 1 sentence max
@@ -79,7 +80,8 @@ def parse_message(user_message: str, manga_list: list) -> dict:
     try:
         return json.loads(raw)
     except json.JSONDecodeError:
-        return {"intent": "list", "status": None, "reply": "Showing your list."}
+        logger.warning(f"Failed to parse AI response: {raw!r}")
+        return {"intent": "unknown", "reply": raw or "I didn't quite get that."}
 
 
 
