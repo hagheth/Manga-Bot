@@ -467,13 +467,11 @@ async def execute_action(update: Update, context: ContextTypes.DEFAULT_TYPE, par
             msg = "What are you looking for?"
 
     elif intent in ("suggest", "suggest_new"):
-        suggest_new = intent == "suggest_new"
         try:
-            result = suggest_manga(mangas, suggest_new=suggest_new)
-            msg = f"🤖 {result}" if result else "🤖 Couldn't generate a suggestion. Try again."
+            msg = chat_manga(text) if text else chat_manga("Recommend me some good manga to read.")
         except Exception as e:
-            logger.error(f"suggest_manga error: {e}")
-            msg = f"🤖 Suggestion failed: {e}"
+            logger.error(f"suggest error: {e}")
+            msg = "🤖 Couldn't generate a suggestion. Try again."
 
     else:
         try:
