@@ -83,8 +83,15 @@ def parse_message(user_message: str, manga_list: list) -> dict:
 
 
 
-def chat_manga(user_message: str) -> str:
-    """Answer general manga questions conversationally."""
+def chat_manga(user_message: str, manga_list: list = None) -> str:
+    """Answer general manga questions conversationally, with optional reading list context."""
+    context = ""
+    if manga_list:
+        lines = []
+        for m in manga_list:
+            lines.append(f"- {m['title']}: {m['status']}, chapter {m['chapter']}")
+        context = "\n\nThe user's manga list:\n" + "\n".join(lines)
+
     response = client.chat.completions.create(
         model="openai/gpt-oss-20b",
         messages=[
@@ -94,7 +101,9 @@ def chat_manga(user_message: str) -> str:
                     "You are an enthusiastic manga expert who talks like an anime character from a dub. "
                     "Use anime catchphrases and expressions naturally (like 'Believe it!', 'This is my ninja way!', 'By the power of friendship!', 'Nani?!', 'Sugoi!', 'Yare yare...', etc). "
                     "Talk in a casual conversational tone like you're chatting with a friend — no bullet points, no lists, no tables, no markdown. "
-                    "Keep it under 80 words and make it fun and energetic."
+                    "Keep it under 80 words and make it fun and energetic. "
+                    "Use the user's manga list to give personalized answers when relevant."
+                    + context
                 ),
             },
             {"role": "user", "content": user_message},

@@ -468,14 +468,14 @@ async def execute_action(update: Update, context: ContextTypes.DEFAULT_TYPE, par
 
     elif intent in ("suggest", "suggest_new"):
         try:
-            msg = chat_manga(text) if text else chat_manga("Recommend me some good manga to read.")
+            msg = chat_manga(text or "Recommend me some good manga to read.", mangas)
         except Exception as e:
             logger.error(f"suggest error: {e}")
             msg = "🤖 Couldn't generate a suggestion. Try again."
 
     else:
         try:
-            msg = chat_manga(text)
+            msg = chat_manga(text, mangas)
         except Exception as e:
             logger.error(f"chat_manga error: {e}")
             msg = "🤔 I'm not sure what you mean. Try: \"I'm reading One Piece ch1120\" or \"show my list\""
