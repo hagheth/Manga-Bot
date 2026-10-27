@@ -114,29 +114,20 @@ async def add_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("❌ Failed to add manga. Try again.")
 
 
+def build_status_filter_keyboard():
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("📖 Reading", callback_data="filter_reading"),
+         InlineKeyboardButton("✅ Completed", callback_data="filter_completed")],
+        [InlineKeyboardButton("❌ Dropped", callback_data="filter_dropped"),
+         InlineKeyboardButton("📚 All", callback_data="filter_all")],
+    ])
+
+
 async def list_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    status_filter = context.args[0].lower() if context.args else None
-
-    valid = ["reading", "completed", "on_hold", "dropped"]
-    if status_filter and status_filter not in valid:
-        await update.message.reply_text(f"Invalid status. Use one of: {', '.join(valid)}")
-        return
-
-    mangas = list_manga(user_id, status_filter)
-
-    if not mangas:
-        msg = "Your list is empty!" if not status_filter else f"No manga with status {status_filter}."
-        await update.message.reply_text(msg)
-        return
-
-    header = "📚 Your Manga List — tap a title for details:" if not status_filter else f"📚 {status_filter.title()} Manga:"
-    keyboard = []
-    for m in mangas:
-        emoji = STATUS_EMOJI.get(m["status"], "📖")
-        keyboard.append([InlineKeyboardButton(f"{emoji} {m['title']}", callback_data=f"info_{m['id']}")])
-
-    await update.message.reply_text(header, reply_markup=InlineKeyboardMarkup(keyboard))
+    await update.message.reply_text(
+        "Which list do you want to see?",
+        reply_markup=build_status_filter_keyboard(),
+    )
 
 
 async def search_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -377,6 +368,23 @@ async def confirm_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
     user_id = query.from_user.id
 
+    # Status filter button from list
+    if query.data.startswith("filter_"):
+        status = query.data.split("_", 1)[1]
+        status_filter = None if status == "all" else status
+        mangas = list_manga(user_id, status_filter)
+        if not mangas:
+            label = "All" if not status_filter else status_filter.title()
+            await query.edit_message_text(f"No manga in {label} list yet.")
+            return
+        header = "📚 All Manga — tap a title for details:" if not status_filter else f"📚 {status_filter.title()} — tap a title for details:"
+        keyboard = []
+        for m in mangas:
+            emoji = STATUS_EMOJI.get(m["status"], "📖")
+            keyboard.append([InlineKeyboardButton(f"{emoji} {m['title']}", callback_data=f"info_{m['id']}")])
+        await query.edit_message_text(header, reply_markup=InlineKeyboardMarkup(keyboard))
+        return
+
     # Info button from list
     if query.data.startswith("info_"):
         manga_id = int(query.data.split("_")[1])
@@ -427,17 +435,20 @@ async def execute_action(update: Update, context: ContextTypes.DEFAULT_TYPE, par
 
     if intent == "list":
         status_filter = parsed.get("status")
-        results = list_manga(user_id, status_filter)
-        if results:
-            header = "📚 Your Manga List — tap a title for details:" if not status_filter else f"📚 {status_filter.title()} Manga:"
-            keyboard = []
-            for m in results:
-                emoji = STATUS_EMOJI.get(m["status"], "📖")
-                keyboard.append([InlineKeyboardButton(f"{emoji} {m['title']}", callback_data=f"info_{m['id']}")])
+        if status_filter:
+            results = list_manga(user_id, status_filter)
+            if not results:
+                await update.message.reply_text(f"No manga in your {status_filter.title()} list yet.")
+                return
+            header = f"📚 {status_filter.title()} — tap a title for details:"
+            keyboard = [[InlineKeyboardButton(f"{STATUS_EMOJI.get(m['status'], '📖')} {m['title']}", callback_data=f"info_{m['id']}")] for m in results]
             await update.message.reply_text(header, reply_markup=InlineKeyboardMarkup(keyboard))
-            return
         else:
-            msg = "Your manga list is empty!"
+            await update.message.reply_text(
+                "Which list do you want to see?",
+                reply_markup=build_status_filter_keyboard(),
+            )
+        return
 
     elif intent == "search":
         keyword = parsed.get("keyword") or parsed.get("title")
