@@ -83,6 +83,27 @@ def parse_message(user_message: str, manga_list: list) -> dict:
 
 
 
+def chat_manga(user_message: str) -> str:
+    """Answer general manga questions conversationally."""
+    response = client.chat.completions.create(
+        model="openai/gpt-oss-20b",
+        messages=[
+            {
+                "role": "system",
+                "content": (
+                    "You are a knowledgeable and enthusiastic manga expert. "
+                    "Answer questions about manga, anime, authors, storylines, recommendations, and related topics. "
+                    "Be friendly, concise, and helpful. Keep replies under 200 words."
+                ),
+            },
+            {"role": "user", "content": user_message},
+        ],
+        max_tokens=400,
+        temperature=0.7,
+    )
+    return response.choices[0].message.content.strip()
+
+
 def suggest_manga(manga_list: list, suggest_new: bool = False) -> str:
     """Ask AI to recommend what to read next or suggest new manga."""
     if not manga_list and not suggest_new:

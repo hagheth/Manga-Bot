@@ -10,7 +10,7 @@ from manga_db import (
     get_manga, update_chapter, update_status, update_note,
     delete_manga_by_keyword,
 )
-from ai import suggest_manga, parse_message
+from ai import suggest_manga, parse_message, chat_manga
 from fetcher import fetch_manga_title
 
 load_dotenv()
@@ -344,7 +344,7 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Actions that don't need confirmation (read-only)
         if intent in ("list", "search", "suggest", "suggest_new", "unknown"):
             await thinking.delete()
-            await execute_action(update, context, parsed, mangas, user_id)
+            await execute_action(update, context, parsed, mangas, user_id, text)
             return
 
         # For write actions — show confirmation
@@ -429,7 +429,7 @@ async def confirm_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text("❌ Something went wrong.")
 
 
-async def execute_action(update: Update, context: ContextTypes.DEFAULT_TYPE, parsed: dict, mangas: list, user_id: int):
+async def execute_action(update: Update, context: ContextTypes.DEFAULT_TYPE, parsed: dict, mangas: list, user_id: int, text: str = ""):
     """Execute read-only actions directly without confirmation."""
     intent = parsed.get("intent")
 
@@ -476,9 +476,13 @@ async def execute_action(update: Update, context: ContextTypes.DEFAULT_TYPE, par
             msg = f"🤖 Suggestion failed: {e}"
 
     else:
-        msg = f"🤔 {parsed.get('reply', 'I am not sure what you mean.')}\n\nTry: \"I'm reading One Piece ch1120\" or \"show my list\""
+        try:
+            msg = chat_manga(text)
+        except Exception as e:
+            logger.error(f"chat_manga error: {e}")
+            msg = "🤔 I'm not sure what you mean. Try: \"I'm reading One Piece ch1120\" or \"show my list\""
 
-    await update.message.reply_text(msg, parse_mode="Markdown", disable_web_page_preview=True)
+    await update.message.reply_text(msg, disable_web_page_preview=True)
 
 
 async def execute_action_data(parsed: dict, mangas: list, user_id: int) -> str:
