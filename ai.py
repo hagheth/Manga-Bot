@@ -19,7 +19,7 @@ Possible intents:
 - "update_chapter": user is updating their reading progress
 - "update_status": user wants to change status (reading/completed/on_hold/dropped)
 - "search": user wants to find a manga
-- "list": user wants to see their list. If they mention ONE specific status (reading/completed/dropped), set the status field. If they say "all", mention multiple statuses, or don't specify, leave status as null.
+- "list": user wants to see their list
 - "suggest": user wants to know what to read next from their existing list
 - "suggest_new": user wants recommendations for NEW manga they haven't read yet (phrases like "suggest another", "recommend something new", "what else should I read", "based on my taste")
 - "delete": user wants to remove one manga by title
@@ -76,10 +76,7 @@ def parse_message(user_message: str, manga_list: list) -> dict:
         if raw.startswith("json"):
             raw = raw[4:]
 
-    try:
-        return json.loads(raw)
-    except json.JSONDecodeError:
-        return {"intent": "list", "status": None, "reply": "Showing your list."}
+    return json.loads(raw)
 
 
 
