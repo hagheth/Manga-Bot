@@ -316,7 +316,11 @@ def describe_action(parsed: dict) -> str:
         msg = f"🗑️ Delete *{title}* from your list"
     elif intent == "delete_bulk":
         keyword = parsed.get("keyword") or title or "?"
-        msg = f"🗑️ Delete ALL manga matching: *{keyword}*"
+        status_words = {"reading", "completed", "dropped", "on_hold", "finished", "complete"}
+        if keyword.lower().replace(" ", "_") in status_words or keyword.lower() in status_words:
+            msg = f"🗑️ Delete ALL manga with status: *{keyword}*"
+        else:
+            msg = f"🗑️ Delete ALL manga matching: *{keyword}*"
     elif intent == "note":
         msg = f"📝 Save note for *{title}*: _{parsed.get('note')}_"
     elif intent == "suggest":
