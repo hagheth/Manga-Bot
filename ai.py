@@ -51,8 +51,33 @@ Rules:
 - IMPORTANT: Always return ONLY valid JSON, no extra text, no markdown code blocks"""
 
 
+def _preparse(user_message: str) -> dict | None:
+    """Detect obvious patterns before hitting the AI."""
+    import re
+    url_match = re.search(r'https?://\S+', user_message)
+    ch_match = re.search(r'(?:chapter|ch|c)\s*(\d+)', user_message, re.IGNORECASE)
+    text_lower = user_message.lower()
+
+    if url_match and ch_match:
+        intent = "update_chapter" if any(w in text_lower for w in ("read", "on", "at", "until", "till")) else "add"
+        return {
+            "intent": intent,
+            "url": url_match.group(0),
+            "chapter": int(ch_match.group(1)),
+            "title": None,
+            "status": "reading",
+            "reply": "Got it!",
+        }
+    return None
+
+
 def parse_message(user_message: str, manga_list: list) -> dict:
     """Parse a natural language message and return structured intent + data."""
+
+    # Fast-path for obvious URL + chapter patterns
+    pre = _preparse(user_message)
+    if pre:
+        return pre
 
     # Give AI context about existing manga
     existing = ""
@@ -72,11 +97,16 @@ def parse_message(user_message: str, manga_list: list) -> dict:
 
     raw = response.choices[0].message.content.strip()
 
-    # Extract JSON if wrapped in code block
+    # Extract JSON from code block or find first { } block
     if "```" in raw:
         raw = raw.split("```")[1]
         if raw.startswith("json"):
             raw = raw[4:]
+    else:
+        import re
+        m = re.search(r'\{.*\}', raw, re.DOTALL)
+        if m:
+            raw = m.group(0)
 
     try:
         return json.loads(raw)
