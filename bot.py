@@ -120,25 +120,23 @@ async def list_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     valid = ["reading", "completed", "on_hold", "dropped"]
     if status_filter and status_filter not in valid:
-        await update.message.reply_text(
-            f"Invalid status. Use one of: {', '.join(valid)}"
-        )
+        await update.message.reply_text(f"Invalid status. Use one of: {', '.join(valid)}")
         return
 
     mangas = list_manga(user_id, status_filter)
 
     if not mangas:
-        msg = "Your list is empty!" if not status_filter else f"No manga with status *{status_filter}*."
-        await update.message.reply_text(msg, parse_mode="Markdown")
+        msg = "Your list is empty!" if not status_filter else f"No manga with status {status_filter}."
+        await update.message.reply_text(msg)
         return
 
-    header = "📚 Your Manga List" if not status_filter else f"📚 {status_filter.title()} Manga"
-    lines = [header, ""]
+    header = "📚 Your Manga List — tap a title for details:" if not status_filter else f"📚 {status_filter.title()} Manga:"
+    keyboard = []
     for m in mangas:
         emoji = STATUS_EMOJI.get(m["status"], "📖")
-        lines.append(f"{emoji} {m['title']} — Ch.{m['chapter']} #{m['id']}")
+        keyboard.append([InlineKeyboardButton(f"{emoji} {m['title']}", callback_data=f"info_{m['id']}")])
 
-    await update.message.reply_text("\n".join(lines), disable_web_page_preview=True)
+    await update.message.reply_text(header, reply_markup=InlineKeyboardMarkup(keyboard))
 
 
 async def search_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -379,6 +377,28 @@ async def confirm_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
     user_id = query.from_user.id
 
+    # Info button from list
+    if query.data.startswith("info_"):
+        manga_id = int(query.data.split("_")[1])
+        manga = get_manga(user_id, manga_id)
+        if not manga:
+            await query.answer("Manga not found.", show_alert=True)
+            return
+        emoji = STATUS_EMOJI.get(manga["status"], "📖")
+        msg = (
+            f"{emoji} {manga['title']}\n"
+            f"📖 Chapter: {manga['chapter']}\n"
+            f"📌 Status: {manga['status']}\n"
+            f"🆔 ID: {manga['id']}\n"
+        )
+        if manga.get("url"):
+            msg += f"🔗 {manga['url']}\n"
+        if manga.get("notes"):
+            msg += f"📝 {manga['notes']}\n"
+        msg += f"🕒 Updated: {manga['updated_at'][:10]}"
+        await query.message.reply_text(msg, disable_web_page_preview=True)
+        return
+
     if query.data == "confirm_no":
         await query.edit_message_text("❌ Cancelled. Nothing was saved.")
         context.user_data.pop("pending", None)
@@ -409,13 +429,13 @@ async def execute_action(update: Update, context: ContextTypes.DEFAULT_TYPE, par
         status_filter = parsed.get("status")
         results = list_manga(user_id, status_filter)
         if results:
-            header = "📚 Your Manga List" if not status_filter else f"📚 {status_filter.title()} Manga"
-            lines = [header, ""]
+            header = "📚 Your Manga List — tap a title for details:" if not status_filter else f"📚 {status_filter.title()} Manga:"
+            keyboard = []
             for m in results:
                 emoji = STATUS_EMOJI.get(m["status"], "📖")
-                line = f"{emoji} {m['title']} — Ch.{m['chapter']} #{m['id']}"
-                lines.append(line)
-            msg = "\n".join(lines)
+                keyboard.append([InlineKeyboardButton(f"{emoji} {m['title']}", callback_data=f"info_{m['id']}")])
+            await update.message.reply_text(header, reply_markup=InlineKeyboardMarkup(keyboard))
+            return
         else:
             msg = "Your manga list is empty!"
 
