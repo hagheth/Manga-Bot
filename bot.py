@@ -10,7 +10,7 @@ from manga_db import (
     get_manga, update_chapter, update_status, update_note,
     delete_manga_by_keyword,
 )
-from ai import suggest_manga, parse_message, generate_tags
+from ai import suggest_manga, parse_message
 from fetcher import fetch_manga_title
 
 load_dotenv()
@@ -136,10 +136,7 @@ async def list_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     lines = [header, ""]
     for m in mangas:
         emoji = STATUS_EMOJI.get(m["status"], "📖")
-        line = f"{emoji} {m['title']} — Ch.{m['chapter']} #{m['id']}"
-        if m.get("tags"):
-            line += f"\n    🏷️ {' · '.join(m['tags'])}"
-        lines.append(line)
+        lines.append(f"{emoji} {m['title']} — Ch.{m['chapter']} #{m['id']}")
 
     await update.message.reply_text("\n".join(lines), disable_web_page_preview=True)
 
@@ -188,8 +185,6 @@ async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"📌 Status: {manga['status']}\n"
         f"🆔 ID: `{manga['id']}`\n"
     )
-    if manga.get("tags"):
-        msg += f"🏷️ Tags: {' · '.join(manga['tags'])}\n"
     if manga.get("notes"):
         msg += f"📝 Notes: {manga['notes']}\n"
     msg += f"🕒 Updated: {manga['updated_at'][:10]}"
@@ -418,12 +413,7 @@ async def execute_action(update: Update, context: ContextTypes.DEFAULT_TYPE, par
             lines = [header, ""]
             for m in results:
                 emoji = STATUS_EMOJI.get(m["status"], "📖")
-                title = m['title']
-                line = f"{emoji} {title} — Ch.{m['chapter']} #{m['id']}"
-                if m.get("url"):
-                    line += f"\n    🔗 {m['url']}"
-                if m.get("tags"):
-                    line += f"\n    🏷️ {' · '.join(m['tags'])}"
+                line = f"{emoji} {m['title']} — Ch.{m['chapter']} #{m['id']}"
                 lines.append(line)
             msg = "\n".join(lines)
         else:
@@ -475,16 +465,11 @@ async def execute_action_data(parsed: dict, mangas: list, user_id: int) -> str:
     if intent == "add":
         if not title:
             return "❌ Couldn't get the title. Please tell me the manga name."
-        tags = generate_tags(title, url)
-        manga = add_manga(user_id, title, url, chapter, tags)
+        manga = add_manga(user_id, title, url, chapter)
         if manga:
             if status != "reading":
                 update_status(user_id, manga["id"], status)
-            tag_str = " · ".join(tags) if tags else ""
-            msg = f"✅ *{title}* saved! Ch.{chapter} | ID: `{manga['id']}`"
-            if tag_str:
-                msg += f"\n🏷️ {tag_str}"
-            return msg
+            return f"✅ *{title}* saved! Ch.{chapter} | ID: `{manga['id']}`"
         return "❌ Failed to save. Try again."
 
     elif intent == "update_chapter":
@@ -498,15 +483,10 @@ async def execute_action_data(parsed: dict, mangas: list, user_id: int) -> str:
                 update_status(user_id, m["id"], status)
             return f"✅ *{m['title']}* updated to Ch.{chapter}!"
         else:
-            tags = generate_tags(title, url)
-            manga = add_manga(user_id, title, url, chapter, tags)
+            manga = add_manga(user_id, title, url, chapter)
             if manga and status != "reading":
                 update_status(user_id, manga["id"], status)
-            tag_str = " · ".join(tags) if tags else ""
-            msg = f"✅ Added *{title}* to your list at Ch.{chapter}!"
-            if tag_str:
-                msg += f"\n🏷️ {tag_str}"
-            return msg
+            return f"✅ Added *{title}* to your list at Ch.{chapter}!"
 
     elif intent == "update_status":
         if title and status:

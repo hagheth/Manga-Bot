@@ -79,39 +79,6 @@ def parse_message(user_message: str, manga_list: list) -> dict:
     return json.loads(raw)
 
 
-def generate_tags(title: str, url: str = None) -> list[str]:
-    """Ask AI to generate genre tags for a manga based on its title and URL."""
-    context = f"Manga title: {title}"
-    if url:
-        context += f"\nURL: {url}"
-
-    try:
-        response = client.chat.completions.create(
-            model="openai/gpt-oss-20b",
-            messages=[{
-                "role": "user",
-                "content": (
-                    f"{context}\n\n"
-                    "Return 3-5 genre/theme tags for this manga as a JSON array of lowercase strings. "
-                    "Examples: [\"action\", \"dark\", \"supernatural\"], [\"romance\", \"comedy\", \"school\"]. "
-                    "Return ONLY the JSON array, nothing else."
-                ),
-            }],
-            max_tokens=60,
-            temperature=0.1,
-        )
-        raw = response.choices[0].message.content.strip()
-        logger.info(f"generate_tags raw response: {repr(raw)}")
-        if "```" in raw:
-            raw = raw.split("```")[1]
-            if raw.startswith("json"):
-                raw = raw[4:]
-        tags = json.loads(raw)
-        return [t.lower().strip() for t in tags if isinstance(t, str)][:5]
-    except Exception as e:
-        logger.warning(f"generate_tags failed: {e}")
-        return []
-
 
 def suggest_manga(manga_list: list, suggest_new: bool = False) -> str:
     """Ask AI to recommend what to read next or suggest new manga."""
