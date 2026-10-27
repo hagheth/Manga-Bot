@@ -555,12 +555,21 @@ async def execute_action_data(parsed: dict, mangas: list, user_id: int) -> str:
 
     elif intent == "delete_bulk":
         keyword_str = parsed.get("keyword") or parsed.get("title")
+        status_keywords = {"reading", "completed", "dropped", "on_hold", "on hold", "finished", "complete"}
         if keyword_str:
             keywords = [k.strip() for k in keyword_str.split(",") if k.strip()]
             all_deleted = []
             for kw in keywords:
-                deleted = delete_manga_by_keyword(user_id, kw)
-                all_deleted.extend(deleted)
+                kw_norm = kw.lower().replace(" ", "_")
+                if kw_norm in {"reading", "completed", "dropped", "on_hold"} or kw.lower() in status_keywords:
+                    status = "completed" if kw.lower() in ("finished", "complete", "completed") else kw_norm.replace(" ", "_")
+                    matches = list_manga(user_id, status)
+                    for m in matches:
+                        delete_manga(user_id, m["id"])
+                        all_deleted.append(m["title"])
+                else:
+                    deleted = delete_manga_by_keyword(user_id, kw)
+                    all_deleted.extend(deleted)
             if all_deleted:
                 titles = "\n".join(f"• {t}" for t in all_deleted)
                 return f"💨 Poof! {len(all_deleted)} manga erased from existence:\n{titles}"
