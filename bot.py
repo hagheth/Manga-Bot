@@ -34,14 +34,14 @@ STATUS_EMOJI = {
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user.first_name
     await update.message.reply_text(
-        f"Hey {user}! 👋 I'm your Manga Bookmark Bot.\n\n"
-        "I'll help you save and track your manga reading list.\n\n"
-        "Type /help to see available commands.\n\n"
-        "Or just talk naturally! Examples:\n"
+        f"Yosh! {user}-kun! 🔥 Your manga sensei has arrived!\n\n"
+        "I'll guard your reading list with the power of friendship! 💪\n\n"
+        "Just talk to me naturally, believe it! Examples:\n"
         "• \"I'm reading One Piece ch1120\"\n"
         "• \"I finished Berserk\"\n"
         "• \"What should I read next?\"\n"
-        "• \"Show me my list\""
+        "• \"Show me my list\"\n\n"
+        "Or type /help to see all my jutsu! ⚡"
     )
 
 
@@ -90,12 +90,12 @@ async def add_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # If single arg and looks like a URL — auto-fetch title
     if len(parts) == 1 and parts[0].startswith("http"):
         url = parts[0]
-        notice = await update.message.reply_text("🔍 Fetching manga info from link...")
+        notice = await update.message.reply_text("🔍 Activating manga detection jutsu...")
         title = fetch_manga_title(url)
         if not title:
-            await notice.edit_text("⚠️ Couldn't fetch title. Use `/add <title> | <url>` instead.", parse_mode="Markdown")
+            await notice.edit_text("😤 Couldn't grab the title! Try `/add <title> | <url>` instead.", parse_mode="Markdown")
             return
-        await notice.edit_text(f"✅ Found: *{title}*", parse_mode="Markdown")
+        await notice.edit_text(f"Sugoi! Found: *{title}* ✨", parse_mode="Markdown")
     else:
         title = parts[0]
         url = parts[1] if len(parts) > 1 else None
@@ -105,13 +105,13 @@ async def add_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     manga = add_manga(user_id, title, url, chapter)
     if manga:
-        msg = f"📚 *{title}* saved!\n"
+        msg = f"Yatta! 🎉 *{title}* has joined your list!\n"
         if url:
             msg += f"🔗 [Link]({url})\n"
-        msg += f"📖 Chapter: {chapter} | 🆔 ID: `{manga['id']}`"
+        msg += f"📖 Ch.{chapter} | 🆔 ID: `{manga['id']}`"
         await update.message.reply_text(msg, parse_mode="Markdown")
     else:
-        await update.message.reply_text("❌ Failed to add manga. Try again.")
+        await update.message.reply_text("😱 Something went wrong... the scroll was lost! Try again.")
 
 
 def build_status_filter_keyboard():
@@ -141,10 +141,10 @@ async def search_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     mangas = search_manga(user_id, keyword)
 
     if not mangas:
-        await update.message.reply_text(f"No manga found matching *{keyword}*.", parse_mode="Markdown")
+        await update.message.reply_text(f"Nani?! 😲 Can't find *{keyword}* anywhere in your list!", parse_mode="Markdown")
         return
 
-    lines = [f"🔍 *Results for \"{keyword}\"*", ""]
+    lines = [f"🔍 *Results for \"{keyword}\"* — found it! 💥", ""]
     for m in mangas:
         emoji = STATUS_EMOJI.get(m["status"], "📖")
         title_part = f"[{m['title']}]({m['url']})" if m.get("url") else m["title"]
@@ -162,7 +162,7 @@ async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     manga = get_manga(user_id, int(context.args[0]))
     if not manga:
-        await update.message.reply_text("❌ Manga not found.")
+        await update.message.reply_text("Nani?! 😱 That manga doesn't exist in your scroll!")
         return
 
     emoji = STATUS_EMOJI.get(manga["status"], "📖")
@@ -199,10 +199,10 @@ async def update_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     manga = update_chapter(user_id, manga_id, chapter)
     if manga:
         await update.message.reply_text(
-            f"✅ *{manga['title']}* updated to Chapter {chapter}!", parse_mode="Markdown"
+            f"🔥 *{manga['title']}* — progress saved at Ch.{chapter}! Keep going!", parse_mode="Markdown"
         )
     else:
-        await update.message.reply_text("❌ Manga not found.")
+        await update.message.reply_text("Nani?! 😱 That manga doesn't exist in your scroll!")
 
 
 async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -228,10 +228,10 @@ async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if manga:
         emoji = STATUS_EMOJI.get(new_status, "📖")
         await update.message.reply_text(
-            f"{emoji} *{manga['title']}* marked as *{new_status}*!", parse_mode="Markdown"
+            f"{emoji} *{manga['title']}* is now *{new_status}*! The arc has shifted! ⚡", parse_mode="Markdown"
         )
     else:
-        await update.message.reply_text("❌ Manga not found.")
+        await update.message.reply_text("Nani?! 😱 That manga doesn't exist in your scroll!")
 
 
 async def note_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -247,10 +247,10 @@ async def note_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     manga = update_note(user_id, manga_id, note)
     if manga:
         await update.message.reply_text(
-            f"📝 Note saved for *{manga['title']}*: _{note}_", parse_mode="Markdown"
+            f"📝 Noted, senpai! Saved for *{manga['title']}*: _{note}_", parse_mode="Markdown"
         )
     else:
-        await update.message.reply_text("❌ Manga not found.")
+        await update.message.reply_text("Nani?! 😱 That manga doesn't exist in your scroll!")
 
 
 async def delete_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -264,9 +264,9 @@ async def delete_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     result = delete_manga(user_id, manga_id)
 
     if result:
-        await update.message.reply_text(f"🗑️ Manga `#{manga_id}` deleted.", parse_mode="Markdown")
+        await update.message.reply_text(f"💨 Poof! Manga `#{manga_id}` has been erased from existence!", parse_mode="Markdown")
     else:
-        await update.message.reply_text(f"❌ No manga found with ID `#{manga_id}`.", parse_mode="Markdown")
+        await update.message.reply_text(f"Nani?! 😱 No manga with ID `#{manga_id}` found!", parse_mode="Markdown")
 
 
 async def suggest_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -334,7 +334,7 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     text = update.message.text.strip()
 
-    thinking = await update.message.reply_text("💭 Understanding your message...")
+    thinking = await update.message.reply_text("🧠 Activating my manga brain...")
 
     try:
         mangas = list_manga(user_id)
@@ -353,7 +353,7 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data["pending_mangas"] = mangas
 
         await thinking.edit_text(
-            f"I understood:\n\n{summary}\n\nIs this correct?",
+            f"Sugoi! I got it! 👀\n\n{summary}\n\nShall I proceed, senpai?",
             parse_mode="Markdown",
             reply_markup=build_confirm_keyboard(),
         )
@@ -408,7 +408,7 @@ async def confirm_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     if query.data == "confirm_no":
-        await query.edit_message_text("❌ Cancelled. Nothing was saved.")
+        await query.edit_message_text("Yare yare... 😮‍💨 Cancelled! Nothing was changed.")
         context.user_data.pop("pending", None)
         return
 
@@ -416,17 +416,17 @@ async def confirm_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     mangas = context.user_data.pop("pending_mangas", [])
 
     if not parsed:
-        await query.edit_message_text("❌ Session expired. Please try again.")
+        await query.edit_message_text("😵 Session expired! Try again, I believe in you!")
         return
 
-    await query.edit_message_text("⏳ Doing it...")
+    await query.edit_message_text("⚡ On it! Deploying full power...")
 
     try:
         result_msg = await execute_action_data(parsed, mangas, user_id)
         await query.edit_message_text(result_msg, parse_mode="Markdown", disable_web_page_preview=True)
     except Exception as e:
         logger.error(f"Confirm callback error: {e}")
-        await query.edit_message_text("❌ Something went wrong.")
+        await query.edit_message_text("😱 Something went wrong... my power wasn't enough! Try again.")
 
 
 async def execute_action(update: Update, context: ContextTypes.DEFAULT_TYPE, parsed: dict, mangas: list, user_id: int, text: str = ""):
@@ -462,9 +462,9 @@ async def execute_action(update: Update, context: ContextTypes.DEFAULT_TYPE, par
                     lines.append(f"{emoji} {title_part} — Ch.{m['chapter']} `#{m['id']}`")
                 msg = "\n".join(lines)
             else:
-                msg = f"No manga found matching *{keyword}*."
+                msg = f"Nani?! 😲 Can't find *{keyword}* anywhere in your scroll!"
         else:
-            msg = "What are you looking for?"
+            msg = "Oi oi, what are we searching for? 👀"
 
     elif intent in ("suggest", "suggest_new"):
         try:
@@ -497,29 +497,29 @@ async def execute_action_data(parsed: dict, mangas: list, user_id: int) -> str:
 
     if intent == "add":
         if not title:
-            return "❌ Couldn't get the title. Please tell me the manga name."
+            return "😅 I couldn't catch the title! Tell me the manga name, senpai!"
         manga = add_manga(user_id, title, url, chapter)
         if manga:
             if status != "reading":
                 update_status(user_id, manga["id"], status)
-            return f"✅ *{title}* saved! Ch.{chapter} | ID: `{manga['id']}`"
-        return "❌ Failed to save. Try again."
+            return f"Yatta! 🎉 *{title}* has joined your list! Ch.{chapter} | ID: `{manga['id']}`"
+        return "😱 Something went wrong... the scroll was lost! Try again."
 
     elif intent == "update_chapter":
         if not title:
-            return "❌ Couldn't get the title."
+            return "😅 I couldn't catch the title! Tell me the manga name, senpai!"
         results = search_manga(user_id, title)
         if results:
             m = results[0]
             update_chapter(user_id, m["id"], chapter)
             if status != "reading":
                 update_status(user_id, m["id"], status)
-            return f"✅ *{m['title']}* updated to Ch.{chapter}!"
+            return f"🔥 *{m['title']}* — progress saved at Ch.{chapter}! Keep going!"
         else:
             manga = add_manga(user_id, title, url, chapter)
             if manga and status != "reading":
                 update_status(user_id, manga["id"], status)
-            return f"✅ Added *{title}* to your list at Ch.{chapter}!"
+            return f"Yatta! 🎉 *{title}* added to your list at Ch.{chapter}!"
 
     elif intent == "update_status":
         if title and status:
@@ -528,9 +528,9 @@ async def execute_action_data(parsed: dict, mangas: list, user_id: int) -> str:
                 m = results[0]
                 update_status(user_id, m["id"], status)
                 emoji = STATUS_EMOJI.get(status, "📖")
-                return f"{emoji} *{m['title']}* marked as *{status}*!"
-            return f"❌ Couldn't find *{title}* in your list."
-        return "❌ Tell me which manga and what status."
+                return f"{emoji} *{m['title']}* is now *{status}*! The arc has shifted! ⚡"
+            return f"Nani?! 😲 Can't find *{title}* in your scroll!"
+        return "😅 Tell me which manga and what status, senpai!"
 
     elif intent == "note":
         note = parsed.get("note")
@@ -539,9 +539,9 @@ async def execute_action_data(parsed: dict, mangas: list, user_id: int) -> str:
             if results:
                 m = results[0]
                 update_note(user_id, m["id"], note)
-                return f"📝 Note saved for *{m['title']}*!"
-            return f"❌ Couldn't find *{title}* in your list."
-        return "❌ Tell me which manga and what note."
+                return f"📝 Noted, senpai! Sealed into the scroll for *{m['title']}*!"
+            return f"Nani?! 😲 Can't find *{title}* in your scroll!"
+        return "😅 Tell me which manga and what note, senpai!"
 
     elif intent == "delete":
         if title:
@@ -549,9 +549,9 @@ async def execute_action_data(parsed: dict, mangas: list, user_id: int) -> str:
             if results:
                 m = results[0]
                 delete_manga(user_id, m["id"])
-                return f"🗑️ *{m['title']}* removed from your list."
-            return f"❌ Couldn't find *{title}* in your list."
-        return "❌ Which manga do you want to delete?"
+                return f"💨 Poof! *{m['title']}* has been erased from existence!"
+            return f"Nani?! 😲 Can't find *{title}* in your scroll!"
+        return "😅 Which manga shall be erased, senpai?"
 
     elif intent == "delete_bulk":
         keyword_str = parsed.get("keyword") or parsed.get("title")
@@ -563,11 +563,11 @@ async def execute_action_data(parsed: dict, mangas: list, user_id: int) -> str:
                 all_deleted.extend(deleted)
             if all_deleted:
                 titles = "\n".join(f"• {t}" for t in all_deleted)
-                return f"🗑️ Deleted {len(all_deleted)} manga:\n{titles}"
-            return f"❌ No manga found matching *{keyword_str}*."
-        return "❌ What should I delete?"
+                return f"💨 Poof! {len(all_deleted)} manga erased from existence:\n{titles}"
+            return f"Nani?! 😲 Can't find anything matching *{keyword_str}* in your scroll!"
+        return "😅 What shall be erased, senpai?"
 
-    return "❌ Unknown action."
+    return "😵 Unknown jutsu... I don't know what to do with that!"
 
 
 def main():
