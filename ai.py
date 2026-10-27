@@ -101,6 +101,7 @@ def generate_tags(title: str, url: str = None) -> list[str]:
             temperature=0.1,
         )
         raw = response.choices[0].message.content.strip()
+        logger.info(f"generate_tags raw response: {repr(raw)}")
         if "```" in raw:
             raw = raw.split("```")[1]
             if raw.startswith("json"):
