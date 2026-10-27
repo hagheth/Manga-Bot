@@ -125,7 +125,7 @@ def build_status_filter_keyboard():
 
 async def list_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "Which list do you want to see?",
+        "Yosh! Which list shall I reveal to you? 👀",
         reply_markup=build_status_filter_keyboard(),
     )
 
@@ -375,9 +375,9 @@ async def confirm_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         mangas = list_manga(user_id, status_filter)
         if not mangas:
             label = "All" if not status_filter else status_filter.title()
-            await query.edit_message_text(f"No manga in {label} list yet.")
+            await query.edit_message_text(f"Nani?! Your {label} list is empty... the arc hasn't started yet! 😤")
             return
-        header = "📚 All Manga — tap a title for details:" if not status_filter else f"📚 {status_filter.title()} — tap a title for details:"
+        header = "📚 Your saga awaits — tap a title! ✨" if not status_filter else f"📚 {status_filter.title()} — tap a title! ✨"
         keyboard = []
         for m in mangas:
             emoji = STATUS_EMOJI.get(m["status"], "📖")
@@ -438,14 +438,14 @@ async def execute_action(update: Update, context: ContextTypes.DEFAULT_TYPE, par
         if status_filter:
             results = list_manga(user_id, status_filter)
             if not results:
-                await update.message.reply_text(f"No manga in your {status_filter.title()} list yet.")
+                await update.message.reply_text(f"Nani?! Your {status_filter.title()} list is empty... the arc hasn't started yet! 😤")
                 return
             header = f"📚 {status_filter.title()} — tap a title for details:"
             keyboard = [[InlineKeyboardButton(f"{STATUS_EMOJI.get(m['status'], '📖')} {m['title']}", callback_data=f"info_{m['id']}")] for m in results]
             await update.message.reply_text(header, reply_markup=InlineKeyboardMarkup(keyboard))
         else:
             await update.message.reply_text(
-                "Which list do you want to see?",
+                "Yosh! Which list shall I reveal to you? 👀",
                 reply_markup=build_status_filter_keyboard(),
             )
         return
