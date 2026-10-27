@@ -132,14 +132,16 @@ async def list_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(msg, parse_mode="Markdown")
         return
 
-    header = "📚 *Your Manga List*" if not status_filter else f"📚 *{status_filter.title()} Manga*"
+    header = "📚 Your Manga List" if not status_filter else f"📚 {status_filter.title()} Manga"
     lines = [header, ""]
     for m in mangas:
         emoji = STATUS_EMOJI.get(m["status"], "📖")
-        title_part = f"[{m['title']}]({m['url']})" if m.get("url") else m["title"]
-        lines.append(f"{emoji} {title_part} — Ch.{m['chapter']} `#{m['id']}`")
+        line = f"{emoji} {m['title']} — Ch.{m['chapter']} #{m['id']}"
+        if m.get("tags"):
+            line += f"\n    🏷️ {' · '.join(m['tags'])}"
+        lines.append(line)
 
-    await update.message.reply_text("\n".join(lines), parse_mode="Markdown", disable_web_page_preview=True)
+    await update.message.reply_text("\n".join(lines), disable_web_page_preview=True)
 
 
 async def search_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -412,15 +414,16 @@ async def execute_action(update: Update, context: ContextTypes.DEFAULT_TYPE, par
         status_filter = parsed.get("status")
         results = list_manga(user_id, status_filter)
         if results:
-            header = "📚 *Your Manga List*" if not status_filter else f"📚 *{status_filter.title()} Manga*"
+            header = "📚 Your Manga List" if not status_filter else f"📚 {status_filter.title()} Manga"
             lines = [header, ""]
             for m in results:
                 emoji = STATUS_EMOJI.get(m["status"], "📖")
-                title_part = f"[{m['title']}]({m['url']})" if m.get("url") else m["title"]
-                tag_str = " · ".join(m["tags"]) if m.get("tags") else ""
-                line = f"{emoji} {title_part} — Ch.{m['chapter']} `#{m['id']}`"
-                if tag_str:
-                    line += f"\n    🏷️ _{tag_str}_"
+                title = m['title']
+                line = f"{emoji} {title} — Ch.{m['chapter']} #{m['id']}"
+                if m.get("url"):
+                    line += f"\n    🔗 {m['url']}"
+                if m.get("tags"):
+                    line += f"\n    🏷️ {' · '.join(m['tags'])}"
                 lines.append(line)
             msg = "\n".join(lines)
         else:
