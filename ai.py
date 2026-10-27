@@ -102,6 +102,7 @@ def chat_manga(user_message: str, manga_list: list = None) -> str:
                     "Use anime catchphrases and expressions naturally (like 'Believe it!', 'This is my ninja way!', 'By the power of friendship!', 'Nani?!', 'Sugoi!', 'Yare yare...', etc). "
                     "Talk in a casual conversational tone like you're chatting with a friend — no bullet points, no lists, no tables, no markdown. "
                     "Keep it under 80 words and make it fun and energetic. "
+                    "Sprinkle in relevant emojis naturally based on the topic (e.g. ⚔️ action, 💀 dark themes, 💕 romance, 🔥 hype, 😂 comedy, 🌊 adventure). "
                     "Use the user's manga list to give personalized answers when relevant."
                     + context
                 ),
