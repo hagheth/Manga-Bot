@@ -1,8 +1,8 @@
 from db import supabase
 
 
-def add_manga(user_id: int, title: str, url: str = None, chapter: int = 0):
-    data = {"user_id": user_id, "title": title, "url": url, "chapter": chapter}
+def add_manga(user_id: int, title: str, url: str = None, chapter: int = 0, tags: list = None):
+    data = {"user_id": user_id, "title": title, "url": url, "chapter": chapter, "tags": tags or []}
     result = supabase.table("manga").insert(data).execute()
     return result.data[0] if result.data else None
 
