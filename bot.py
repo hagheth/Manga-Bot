@@ -434,10 +434,20 @@ async def execute_action(update: Update, context: ContextTypes.DEFAULT_TYPE, par
     intent = parsed.get("intent")
 
     if intent == "list":
-        await update.message.reply_text(
-            "Which list do you want to see?",
-            reply_markup=build_status_filter_keyboard(),
-        )
+        status_filter = parsed.get("status")
+        if status_filter:
+            results = list_manga(user_id, status_filter)
+            if not results:
+                await update.message.reply_text(f"No manga in your {status_filter.title()} list yet.")
+                return
+            header = f"📚 {status_filter.title()} — tap a title for details:"
+            keyboard = [[InlineKeyboardButton(f"{STATUS_EMOJI.get(m['status'], '📖')} {m['title']}", callback_data=f"info_{m['id']}")] for m in results]
+            await update.message.reply_text(header, reply_markup=InlineKeyboardMarkup(keyboard))
+        else:
+            await update.message.reply_text(
+                "Which list do you want to see?",
+                reply_markup=build_status_filter_keyboard(),
+            )
         return
 
     elif intent == "search":

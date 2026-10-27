@@ -19,7 +19,7 @@ Possible intents:
 - "update_chapter": user is updating their reading progress
 - "update_status": user wants to change status (reading/completed/on_hold/dropped)
 - "search": user wants to find a manga
-- "list": user wants to see their list
+- "list": user wants to see their list (if they mention a specific status like "reading list", "completed", "dropped", set the status field accordingly)
 - "suggest": user wants to know what to read next from their existing list
 - "suggest_new": user wants recommendations for NEW manga they haven't read yet (phrases like "suggest another", "recommend something new", "what else should I read", "based on my taste")
 - "delete": user wants to remove one manga by title
