@@ -100,24 +100,22 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "📚 *Manga Bookmark Bot — Commands*\n\n"
-        "*Add manga:*\n"
-        "`/add <title>` — add by title\n"
-        "`/add <title> | <url>` — add with link\n"
-        "`/add <title> | <url> | ch<number>` — add with chapter\n\n"
-        "*View manga:*\n"
-        "`/list` — show all manga\n"
-        "`/list reading` — filter by status\n"
-        "`/search <keyword>` — search by title\n\n"
-        "*Progress:*\n"
-        "`/info <id>` — full manga details\n"
-        "`/update <id> ch<n>` — update chapter\n"
-        "`/status <id> <status>` — change status\n"
-        "`/note <id> <text>` — save a note\n\n"
-        "*Remove manga:*\n"
-        "`/delete <id>` — delete by ID\n\n"
-        "*Statuses:* reading \\| completed \\| on\\_hold \\| dropped",
-        parse_mode="MarkdownV2",
+        "📚 Manga Bookmark Bot\n\n"
+        "Just talk to me naturally! Examples:\n"
+        "\"I'm reading One Piece ch500\"\n"
+        "\"I finished Berserk\"\n"
+        "\"Show my reading list\"\n"
+        "\"Delete One Piece\"\n"
+        "\"Rate Berserk 9\"\n"
+        "\"Show my stats\"\n"
+        "\"Recommend me something new\"\n\n"
+        "Slash commands:\n"
+        "/list — browse by status\n"
+        "/add <title> | <url> | ch<n>\n"
+        "/search <keyword>\n"
+        "/info <id>\n"
+        "/delete <id>\n\n"
+        "Statuses: reading, completed, dropped"
     )
 
 
