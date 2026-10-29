@@ -135,7 +135,7 @@ def build_status_filter_keyboard():
         [InlineKeyboardButton("📖 Reading", callback_data="filter_reading"),
          InlineKeyboardButton("✅ Completed", callback_data="filter_completed")],
         [InlineKeyboardButton("❌ Dropped", callback_data="filter_dropped"),
-         InlineKeyboardButton("📚 All", callback_data="filter_all")],
+         InlineKeyboardButton("📚 All", callback_data="filter_all")]
     ])
 
 
@@ -471,7 +471,6 @@ async def execute_action(update: Update, context: ContextTypes.DEFAULT_TYPE, par
         reading = sum(1 for m in all_manga if m["status"] == "reading")
         completed = sum(1 for m in all_manga if m["status"] == "completed")
         dropped = sum(1 for m in all_manga if m["status"] == "dropped")
-        on_hold = sum(1 for m in all_manga if m["status"] == "on_hold")
         total_chapters = sum(m["chapter"] for m in all_manga)
         avg_chapters = round(total_chapters / total, 1)
         most_read = max(all_manga, key=lambda m: m["chapter"])
@@ -480,7 +479,6 @@ async def execute_action(update: Update, context: ContextTypes.DEFAULT_TYPE, par
             f"📚 Total manga: {total}\n"
             f"📖 Reading: {reading}\n"
             f"✅ Completed: {completed}\n"
-            f"⏸️ On hold: {on_hold}\n"
             f"❌ Dropped: {dropped}\n\n"
             f"📈 Total chapters read: {total_chapters}\n"
             f"⌀ Avg chapters per manga: {avg_chapters}\n"
