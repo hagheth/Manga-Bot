@@ -7,7 +7,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, Cal
 
 from manga_db import (
     add_manga, list_manga, search_manga, delete_manga,
-    get_manga, update_chapter, update_status, update_note, update_url,
+    get_manga, update_chapter, update_status, update_note, update_url, update_title,
     delete_manga_by_keyword,
 )
 from ai import suggest_manga, parse_message, chat_manga
@@ -321,6 +321,9 @@ def describe_action(parsed: dict) -> str:
             msg = f"🗑️ Delete ALL manga with status: *{keyword}*"
         else:
             msg = f"🗑️ Delete ALL manga matching: *{keyword}*"
+    elif intent == "rename":
+        old = parsed.get("keyword", "?")
+        msg = f"✏️ Rename *{old}* → *{title}*"
     elif intent == "update_url":
         msg = f"🔗 Update link for *{title}*\n{parsed.get('url', '')}"
     elif intent == "note":
@@ -537,6 +540,18 @@ async def execute_action_data(parsed: dict, mangas: list, user_id: int) -> str:
                 return f"{emoji} *{m['title']}* is now *{status}*! The arc has shifted! ⚡"
             return f"Nani?! 😲 Can't find *{title}* in your scroll!"
         return "😅 Tell me which manga and what status, senpai!"
+
+    elif intent == "rename":
+        old_name = parsed.get("keyword")
+        new_name = title
+        if old_name and new_name:
+            results = search_manga(user_id, old_name)
+            if results:
+                m = results[0]
+                update_title(user_id, m["id"], new_name)
+                return f"✏️ Renamed *{old_name}* → *{new_name}*! Sugoi! ✨"
+            return f"Nani?! 😲 Can't find *{old_name}* in your scroll!"
+        return "😅 Tell me the old name and new name, senpai!"
 
     elif intent == "update_url":
         if title and url:
