@@ -507,6 +507,7 @@ async def execute_action(update: Update, context: ContextTypes.DEFAULT_TYPE, par
             msg = "🤔 I'm not sure what you mean. Try: \"I'm reading One Piece ch1120\" or \"show my list\""
 
     await update.message.reply_text(msg, disable_web_page_preview=True)
+    await send_random_sticker(update.message.chat_id, context)
 
 
 async def execute_action_data(parsed: dict, mangas: list, user_id: int) -> str:
