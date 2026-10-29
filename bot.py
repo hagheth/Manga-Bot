@@ -405,7 +405,11 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Actions that don't need confirmation (read-only)
         if intent in ("list", "search", "suggest", "suggest_new", "stats", "unknown"):
             await thinking.delete()
-            await execute_action(update, context, parsed, mangas, user_id, text)
+            try:
+                await execute_action(update, context, parsed, mangas, user_id, text)
+            except Exception as ex:
+                logger.error(f"execute_action error (intent={intent}): {ex}", exc_info=True)
+                await update.message.reply_text(f"😵 Oops: {ex}")
             return
 
         # For write actions — show confirmation
