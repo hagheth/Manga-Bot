@@ -24,6 +24,7 @@ Possible intents:
 - "suggest_new": user wants recommendations for NEW manga they haven't read yet (phrases like "suggest another", "recommend something new", "what else should I read", "based on my taste")
 - "delete": user wants to remove one manga by title
 - "delete_bulk": user wants to delete multiple manga matching keywords. Put ALL keywords in the "keyword" field as a comma-separated list (e.g. "mangafire,manga plus"). Never join them with "and".
+- "update_url": user wants to update/change the link for an existing manga
 - "note": user wants to add a note
 - "unknown": can't determine intent
 
