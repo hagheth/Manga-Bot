@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+import random
 from dotenv import load_dotenv
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes
@@ -22,6 +23,20 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
+STICKER_PACK = "AnimuReaction1"
+_sticker_cache = []
+
+
+async def send_random_sticker(chat_id, context):
+    global _sticker_cache
+    try:
+        if not _sticker_cache:
+            pack = await context.bot.get_sticker_set(STICKER_PACK)
+            _sticker_cache = [s.file_id for s in pack.stickers]
+        file_id = random.choice(_sticker_cache)
+        await context.bot.send_sticker(chat_id=chat_id, sticker=file_id)
+    except Exception as e:
+        logger.warning(f"Sticker send failed: {e}")
 
 STATUS_EMOJI = {
     "reading": "📖",
@@ -43,6 +58,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "• \"Show me my list\"\n\n"
         "Or type /help to see all my jutsu! ⚡"
     )
+    await send_random_sticker(update.message.chat_id, context)
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -433,6 +449,7 @@ async def confirm_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         result_msg = await execute_action_data(parsed, mangas, user_id)
         await query.edit_message_text(result_msg, parse_mode="Markdown", disable_web_page_preview=True)
+        await send_random_sticker(query.message.chat_id, context)
     except Exception as e:
         logger.error(f"Confirm callback error: {e}")
         await query.edit_message_text("😱 Something went wrong... my power wasn't enough! Try again.")
