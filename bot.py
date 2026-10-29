@@ -385,7 +385,10 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     except Exception as e:
         logger.error(f"Echo handler error: {e}")
-        await thinking.edit_text(f"❌ Error: {e}")
+        try:
+            await thinking.edit_text(f"😵 Oops, something went wrong: {e}")
+        except Exception:
+            await update.message.reply_text(f"😵 Oops, something went wrong. Try again!")
 
 
 async def confirm_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
