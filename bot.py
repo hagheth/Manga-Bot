@@ -8,7 +8,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, Cal
 
 from manga_db import (
     add_manga, list_manga, search_manga, delete_manga,
-    get_manga, update_chapter, update_status, update_note, update_url, update_title,
+    get_manga, update_chapter, update_status, update_note, update_url, update_title, update_rating,
     delete_manga_by_keyword,
 )
 from ai import suggest_manga, parse_message, chat_manga
@@ -337,6 +337,9 @@ def describe_action(parsed: dict) -> str:
             msg = f"🗑️ Delete ALL manga with status: *{keyword}*"
         else:
             msg = f"🗑️ Delete ALL manga matching: *{keyword}*"
+    elif intent == "rate":
+        rating = parsed.get("chapter")
+        msg = f"⭐ Rate *{title}* — {rating}/10"
     elif intent == "rename":
         old = parsed.get("keyword", "?")
         msg = f"✏️ Rename *{old}* → *{title}*"
@@ -429,6 +432,9 @@ async def confirm_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         if manga.get("url"):
             msg += f"🔗 {manga['url']}\n"
+        if manga.get("rating"):
+            stars = "⭐" * manga["rating"]
+            msg += f"⭐ Rating: {manga['rating']}/10 {stars}\n"
         if manga.get("notes"):
             msg += f"📝 {manga['notes']}\n"
         msg += f"🕒 Updated: {manga['updated_at'][:10]}"
@@ -474,6 +480,8 @@ async def execute_action(update: Update, context: ContextTypes.DEFAULT_TYPE, par
         total_chapters = sum(m["chapter"] for m in all_manga)
         avg_chapters = round(total_chapters / total, 1)
         most_read = max(all_manga, key=lambda m: m["chapter"])
+        rated = [m for m in all_manga if m.get("rating")]
+        top_rated = max(rated, key=lambda m: m["rating"]) if rated else None
         msg = (
             f"📊 Your Manga Stats\n\n"
             f"📚 Total manga: {total}\n"
@@ -484,6 +492,8 @@ async def execute_action(update: Update, context: ContextTypes.DEFAULT_TYPE, par
             f"⌀ Avg chapters per manga: {avg_chapters}\n"
             f"🏆 Most read: {most_read['title']} (Ch.{most_read['chapter']})"
         )
+        if top_rated:
+            msg += f"\n⭐ Top rated: {top_rated['title']} ({top_rated['rating']}/10)"
         await update.message.reply_text(msg)
         await send_random_sticker(update.message.chat_id, context)
         return
@@ -587,6 +597,20 @@ async def execute_action_data(parsed: dict, mangas: list, user_id: int) -> str:
                 return f"{emoji} *{m['title']}* is now *{status}*! The arc has shifted! ⚡"
             return f"Nani?! 😲 Can't find *{title}* in your scroll!"
         return "😅 Tell me which manga and what status, senpai!"
+
+    elif intent == "rate":
+        rating = parsed.get("chapter")
+        if title and rating is not None:
+            if not (1 <= int(rating) <= 10):
+                return "😅 Rating must be between 1 and 10, senpai!"
+            results = search_manga(user_id, title)
+            if results:
+                m = results[0]
+                update_rating(user_id, m["id"], int(rating))
+                stars = "⭐" * int(rating)
+                return f"⭐ Rated *{m['title']}* {rating}/10!\n{stars}"
+            return f"Nani?! 😲 Can't find *{title}* in your scroll!"
+        return "😅 Tell me which manga and the rating (1-10), senpai!"
 
     elif intent == "rename":
         old_name = parsed.get("keyword")

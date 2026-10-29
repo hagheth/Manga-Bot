@@ -80,6 +80,17 @@ def update_status(user_id: int, manga_id: int, status: str):
     return result.data[0] if result.data else None
 
 
+def update_rating(user_id: int, manga_id: int, rating: int):
+    result = (
+        supabase.table("manga")
+        .update({"rating": rating, "updated_at": "now()"})
+        .eq("id", manga_id)
+        .eq("user_id", user_id)
+        .execute()
+    )
+    return result.data[0] if result.data else None
+
+
 def update_title(user_id: int, manga_id: int, new_title: str):
     result = (
         supabase.table("manga")

@@ -28,6 +28,7 @@ Possible intents:
 - "rename": user wants to rename/change the title of an existing manga (e.g. "change X into Y", "rename X to Y"). Put the OLD name in "keyword" and the NEW name in "title".
 - "note": user wants to add a note
 - "stats": user wants to see their reading statistics (e.g. "show my stats", "how many manga have I read", "my reading summary")
+- "rate": user wants to rate a manga (e.g. "rate Berserk 9", "give One Piece 10/10", "I'd give Vagabond 8"). Put the rating number (1-10) in the "chapter" field temporarily.
 - "unknown": can't determine intent
 
 Return JSON in this exact format:
