@@ -24,16 +24,39 @@ logger = logging.getLogger(__name__)
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 STICKER_PACK = "AnimuReaction1"
-_sticker_cache = []
+_sticker_cache = {}  # {emoji: [file_id, ...]}
+
+EMOTION_MAP = {
+    "happy":    ["😄", "😊", "😁", "🥳", "😂", "🤣", "😆", "😍"],
+    "hype":     ["🔥", "💪", "⚡", "✨", "🚀", "💥", "🤩"],
+    "sad":      ["😭", "😢", "😔", "💔", "😿"],
+    "thinking": ["🤔", "💭", "🧐"],
+    "surprised":["😱", "😲", "🤯", "😮"],
+    "cool":     ["😎", "🗿", "👍", "🤙"],
+    "love":     ["❤️", "💕", "🥰", "😘"],
+}
 
 
-async def send_random_sticker(chat_id, context):
+async def _load_stickers(context):
     global _sticker_cache
+    if _sticker_cache:
+        return
+    pack = await context.bot.get_sticker_set(STICKER_PACK)
+    for s in pack.stickers:
+        emoji = s.emoji or "😄"
+        _sticker_cache.setdefault(emoji, []).append(s.file_id)
+
+
+async def send_random_sticker(chat_id, context, emotion: str = "happy"):
     try:
-        if not _sticker_cache:
-            pack = await context.bot.get_sticker_set(STICKER_PACK)
-            _sticker_cache = [s.file_id for s in pack.stickers]
-        file_id = random.choice(_sticker_cache)
+        await _load_stickers(context)
+        target_emojis = EMOTION_MAP.get(emotion, EMOTION_MAP["happy"])
+        candidates = []
+        for emoji in target_emojis:
+            candidates.extend(_sticker_cache.get(emoji, []))
+        if not candidates:
+            candidates = [fid for fids in _sticker_cache.values() for fid in fids]
+        file_id = random.choice(candidates)
         await context.bot.send_sticker(chat_id=chat_id, sticker=file_id)
     except Exception as e:
         logger.warning(f"Sticker send failed: {e}")
@@ -533,20 +556,20 @@ async def execute_action(update: Update, context: ContextTypes.DEFAULT_TYPE, par
 
     elif intent in ("suggest", "suggest_new"):
         try:
-            msg = chat_manga(text or "Recommend me some good manga to read.", mangas)
+            msg, emotion = chat_manga(text or "Recommend me some good manga to read.", mangas)
         except Exception as e:
             logger.error(f"suggest error: {e}")
-            msg = "🤖 Couldn't generate a suggestion. Try again."
+            msg, emotion = "🤖 Couldn't generate a suggestion. Try again.", "sad"
 
     else:
         try:
-            msg = chat_manga(text, mangas)
+            msg, emotion = chat_manga(text, mangas)
         except Exception as e:
             logger.error(f"chat_manga error: {e}")
-            msg = "🤔 I'm not sure what you mean. Try: \"I'm reading One Piece ch1120\" or \"show my list\""
+            msg, emotion = "🤔 I'm not sure what you mean. Try: \"I'm reading One Piece ch1120\" or \"show my list\"", "thinking"
 
     await update.message.reply_text(msg, disable_web_page_preview=True)
-    await send_random_sticker(update.message.chat_id, context)
+    await send_random_sticker(update.message.chat_id, context, emotion)
 
 
 async def execute_action_data(parsed: dict, mangas: list, user_id: int) -> str:

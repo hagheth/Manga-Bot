@@ -120,8 +120,29 @@ def parse_message(user_message: str, manga_list: list) -> dict:
 
 
 
-def chat_manga(user_message: str, manga_list: list = None) -> str:
-    """Answer general manga questions conversationally, with optional reading list context."""
+def _detect_emotion(text: str) -> str:
+    """Infer emotion from response text for sticker selection."""
+    import re
+    t = text.lower()
+    if any(w in t for w in ("nani", "sugoi", "no way", "omg", "wait what", "seriously", "unbelievable", "whaaat")):
+        return "surprised"
+    if any(w in t for w in ("fire", "let's go", "hype", "power", "strongest", "believe it", "go beyond", "plus ultra", "unstoppable", "legendary")):
+        return "hype"
+    if any(w in t for w in ("love", "romance", "wholesome", "cute", "adorable", "ship", "aww")):
+        return "love"
+    if any(w in t for w in ("sad", "tragedy", "dark", "death", "cry", "tears", "heartbreak", "painful", "devastating")):
+        return "sad"
+    if any(w in t for w in ("hmm", "interesting", "well", "actually", "depends", "consider", "thinking", "wonder", "perhaps")):
+        return "thinking"
+    if any(w in t for w in ("yare yare", "calm down", "obviously", "cool", "smooth", "no stress", "easy")):
+        return "cool"
+    if any(w in t for w in ("yatta", "amazing", "awesome", "great", "fantastic", "yosh", "haha", "lol", "laugh", "funny", "comedy")):
+        return "happy"
+    return "happy"
+
+
+def chat_manga(user_message: str, manga_list: list = None) -> tuple[str, str]:
+    """Answer general manga questions conversationally. Returns (reply_text, emotion)."""
     context = ""
     if manga_list:
         lines = []
@@ -150,7 +171,9 @@ def chat_manga(user_message: str, manga_list: list = None) -> str:
         max_tokens=400,
         temperature=0.7,
     )
-    return response.choices[0].message.content.strip()
+    text = response.choices[0].message.content.strip()
+    emotion = _detect_emotion(text)
+    return text, emotion
 
 
 def suggest_manga(manga_list: list, suggest_new: bool = False) -> str:
