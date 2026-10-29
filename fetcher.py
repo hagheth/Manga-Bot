@@ -2,6 +2,53 @@ import re
 import httpx
 from bs4 import BeautifulSoup
 
+MANGADEX_API = "https://api.mangadex.org"
+
+
+def fetch_manga_info(title: str) -> dict | None:
+    """Search MangaDex for a manga by title. Returns {title, synopsis, cover_url} or None."""
+    try:
+        with httpx.Client(timeout=10) as client:
+            # Search for manga
+            r = client.get(f"{MANGADEX_API}/manga", params={
+                "title": title,
+                "limit": 1,
+                "includes[]": "cover_art",
+                "contentRating[]": ["safe", "suggestive", "erotica", "pornographic"],
+            })
+            r.raise_for_status()
+            data = r.json().get("data", [])
+            if not data:
+                return None
+
+            manga = data[0]
+            manga_id = manga["id"]
+            attrs = manga["attributes"]
+
+            # Title (prefer English, fallback to first available)
+            titles = attrs.get("title", {})
+            found_title = titles.get("en") or next(iter(titles.values()), title)
+
+            # Synopsis
+            desc = attrs.get("description", {})
+            synopsis = desc.get("en") or next(iter(desc.values()), "")
+            if synopsis and len(synopsis) > 200:
+                synopsis = synopsis[:200].rstrip() + "..."
+
+            # Cover image
+            cover_url = None
+            for rel in manga.get("relationships", []):
+                if rel["type"] == "cover_art":
+                    filename = rel.get("attributes", {}).get("fileName")
+                    if filename:
+                        cover_url = f"https://uploads.mangadex.org/covers/{manga_id}/{filename}.256.jpg"
+                    break
+
+            return {"title": found_title, "synopsis": synopsis, "cover_url": cover_url}
+
+    except Exception:
+        return None
+
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36"
 }
