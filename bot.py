@@ -25,6 +25,8 @@ logger = logging.getLogger(__name__)
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 STICKER_PACK = "AnimuReaction1"
 _sticker_cache = {}  # {emoji: [file_id, ...]}
+_recent_stickers: list = []  # track last N file_ids to avoid repeats
+_STICKER_HISTORY = 5
 
 EMOTION_MAP = {
     "happy":    ["😄", "😊", "😁", "🥳", "😂", "🤣", "😆", "😍"],
@@ -48,6 +50,7 @@ async def _load_stickers(context):
 
 
 async def send_random_sticker(chat_id, context, emotion: str = "happy"):
+    global _recent_stickers
     try:
         await _load_stickers(context)
         target_emojis = EMOTION_MAP.get(emotion, EMOTION_MAP["happy"])
@@ -56,7 +59,14 @@ async def send_random_sticker(chat_id, context, emotion: str = "happy"):
             candidates.extend(_sticker_cache.get(emoji, []))
         if not candidates:
             candidates = [fid for fids in _sticker_cache.values() for fid in fids]
-        file_id = random.choice(candidates)
+        # Avoid recently sent stickers
+        fresh = [fid for fid in candidates if fid not in _recent_stickers]
+        if not fresh:
+            fresh = candidates  # reset if all have been shown
+        file_id = random.choice(fresh)
+        _recent_stickers.append(file_id)
+        if len(_recent_stickers) > _STICKER_HISTORY:
+            _recent_stickers.pop(0)
         await context.bot.send_sticker(chat_id=chat_id, sticker=file_id)
     except Exception as e:
         logger.warning(f"Sticker send failed: {e}")
