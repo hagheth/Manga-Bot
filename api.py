@@ -215,11 +215,6 @@ def manga_cover(title: str):
     return RedirectResponse(url=info["cover_url"])
 
 
-# ── Flutter web app (served last so API routes take priority) ──────────────
-import os as _os
-if _os.path.isdir("flutter_web"):
-    app.mount("/", StaticFiles(directory="flutter_web", html=True), name="flutter")
-
 # ── AI Chat ────────────────────────────────────────────────────────────────
 
 @app.post("/chat")
@@ -280,3 +275,9 @@ def chat(body: ChatRequest):
         "parsed": parsed,
         "reply": confirm_msg,
     }
+
+
+# ── Flutter web app — MUST be last so API routes take priority ─────────────
+import os as _os
+if _os.path.isdir("flutter_web"):
+    app.mount("/", StaticFiles(directory="flutter_web", html=True), name="flutter")
