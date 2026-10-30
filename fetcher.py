@@ -5,27 +5,53 @@ from bs4 import BeautifulSoup
 MANGADEX_API = "https://api.mangadex.org"
 
 
+def _title_similarity(a: str, b: str) -> float:
+    """Simple word-overlap similarity between two titles (0–1)."""
+    a_words = set(a.lower().split())
+    b_words = set(b.lower().split())
+    if not a_words or not b_words:
+        return 0.0
+    return len(a_words & b_words) / max(len(a_words), len(b_words))
+
+
 def fetch_manga_info(title: str) -> dict | None:
     """Search MangaDex for a manga by title. Returns {title, synopsis, cover_url} or None."""
     try:
         with httpx.Client(timeout=10) as client:
             r = client.get(f"{MANGADEX_API}/manga", params={
                 "title": title,
-                "limit": 1,
+                "limit": 10,
                 "includes[]": "cover_art",
-                "contentRating[]": ["safe", "suggestive", "erotica", "pornographic"],
+                "contentRating[]": ["safe", "suggestive"],
+                "order[relevance]": "desc",
             })
             r.raise_for_status()
             data = r.json().get("data", [])
             if not data:
                 return None
 
-            manga = data[0]
+            # Filter out doujinshi and pick best title match
+            candidates = [
+                m for m in data
+                if m["attributes"].get("originalLanguage") in ("ja", "ko", "zh", "zh-hk", None)
+                and "doujinshi" not in [
+                    t["attributes"]["name"].get("en", "").lower()
+                    for t in m["attributes"].get("tags", [])
+                ]
+            ]
+            if not candidates:
+                candidates = data
+
+            def best_title(m):
+                titles = m["attributes"].get("title", {})
+                return titles.get("en") or titles.get("ja-ro") or next(iter(titles.values()), "")
+
+            manga = max(candidates, key=lambda m: _title_similarity(title, best_title(m)))
             manga_id = manga["id"]
             attrs = manga["attributes"]
 
             titles = attrs.get("title", {})
-            found_title = titles.get("en") or next(iter(titles.values()), title)
+            found_title = titles.get("en") or titles.get("ja-ro") or next(iter(titles.values()), title)
 
             desc = attrs.get("description", {})
             synopsis = desc.get("en") or next(iter(desc.values()), "")
