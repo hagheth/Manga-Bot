@@ -5,13 +5,23 @@ from bs4 import BeautifulSoup
 MANGADEX_API = "https://api.mangadex.org"
 
 
-def _title_similarity(a: str, b: str) -> float:
-    """Simple word-overlap similarity between two titles (0–1)."""
-    a_words = set(a.lower().split())
-    b_words = set(b.lower().split())
-    if not a_words or not b_words:
-        return 0.0
-    return len(a_words & b_words) / max(len(a_words), len(b_words))
+def _title_similarity(query: str, manga: dict) -> float:
+    """Score a manga result against the search query using all its titles (0–1)."""
+    q = set(query.lower().split())
+    attrs = manga["attributes"]
+    # Collect all title variants: main titles + alt titles
+    all_titles = list(attrs.get("title", {}).values())
+    for alt in attrs.get("altTitles", []):
+        all_titles.extend(alt.values())
+    best = 0.0
+    for t in all_titles:
+        words = set(t.lower().split())
+        if not words:
+            continue
+        score = len(q & words) / max(len(q), len(words))
+        if score > best:
+            best = score
+    return best
 
 
 def fetch_manga_info(title: str) -> dict | None:
@@ -21,7 +31,7 @@ def fetch_manga_info(title: str) -> dict | None:
             r = client.get(f"{MANGADEX_API}/manga", params={
                 "title": title,
                 "limit": 10,
-                "includes[]": "cover_art",
+                "includes[]": ["cover_art", "author"],
                 "contentRating[]": ["safe", "suggestive"],
                 "order[relevance]": "desc",
             })
@@ -30,11 +40,10 @@ def fetch_manga_info(title: str) -> dict | None:
             if not data:
                 return None
 
-            # Filter out doujinshi and pick best title match
+            # Filter out doujinshi
             candidates = [
                 m for m in data
-                if m["attributes"].get("originalLanguage") in ("ja", "ko", "zh", "zh-hk", None)
-                and "doujinshi" not in [
+                if "doujinshi" not in [
                     t["attributes"]["name"].get("en", "").lower()
                     for t in m["attributes"].get("tags", [])
                 ]
@@ -42,14 +51,11 @@ def fetch_manga_info(title: str) -> dict | None:
             if not candidates:
                 candidates = data
 
-            def best_title(m):
-                titles = m["attributes"].get("title", {})
-                return titles.get("en") or titles.get("ja-ro") or next(iter(titles.values()), "")
-
-            manga = max(candidates, key=lambda m: _title_similarity(title, best_title(m)))
+            manga = max(candidates, key=lambda m: _title_similarity(title, m))
             manga_id = manga["id"]
             attrs = manga["attributes"]
 
+            # Prefer English title, then romanised Japanese, then first available
             titles = attrs.get("title", {})
             found_title = titles.get("en") or titles.get("ja-ro") or next(iter(titles.values()), title)
 
