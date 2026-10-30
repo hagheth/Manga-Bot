@@ -84,8 +84,3 @@ flutter build web
 # commit and push
 ```
 
-## Web App (PWA)
-
-Visit `https://manga-bot-k4yd.onrender.com` in Safari on iPhone, tap **Share → Add to Home Screen** to install as a PWA.
-
-> Note: The free Render instance sleeps after inactivity — first load may take ~50 seconds.
