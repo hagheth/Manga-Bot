@@ -7,18 +7,25 @@ MANGADEX_API = "https://api.mangadex.org"
 
 def _title_similarity(query: str, manga: dict) -> float:
     """Score a manga result against the search query using all its titles (0–1)."""
-    q = set(query.lower().split())
+    q_raw = query.lower().strip()
+    q_words = set(q_raw.split())
     attrs = manga["attributes"]
-    # Collect all title variants: main titles + alt titles
     all_titles = list(attrs.get("title", {}).values())
     for alt in attrs.get("altTitles", []):
         all_titles.extend(alt.values())
     best = 0.0
     for t in all_titles:
-        words = set(t.lower().split())
-        if not words:
+        t_norm = t.lower().strip()
+        t_words = set(t_norm.split())
+        if not t_words:
             continue
-        score = len(q & words) / max(len(q), len(words))
+        # Word-overlap score
+        word_score = len(q_words & t_words) / max(len(q_words), len(t_words))
+        # Substring score: "onepiece" inside "one piece" (stripped spaces)
+        t_nospace = t_norm.replace(" ", "").replace("-", "")
+        q_nospace = q_raw.replace(" ", "").replace("-", "")
+        sub_score = 1.0 if q_nospace == t_nospace else (0.8 if q_nospace in t_nospace or t_nospace in q_nospace else 0.0)
+        score = max(word_score, sub_score)
         if score > best:
             best = score
     return best
