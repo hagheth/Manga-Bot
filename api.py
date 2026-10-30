@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -192,6 +192,18 @@ def manga_info(title: str):
     if not info:
         raise HTTPException(status_code=404, detail="Not found on MangaDex")
     return info
+
+
+@app.get("/proxy/image")
+def proxy_image(url: str):
+    """Proxy external images to avoid CORS issues on web."""
+    try:
+        with httpx.Client(timeout=10, follow_redirects=True) as client:
+            r = client.get(url)
+            r.raise_for_status()
+            return Response(content=r.content, media_type=r.headers.get("content-type", "image/jpeg"))
+    except Exception:
+        raise HTTPException(status_code=404, detail="Image not found")
 
 
 @app.get("/mangainfo/cover")
