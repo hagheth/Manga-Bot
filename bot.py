@@ -419,6 +419,7 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         summary = describe_action(parsed)
         context.user_data["pending"] = parsed
         context.user_data["pending_mangas"] = mangas
+        context.user_data["pending_text"] = text
 
         await thinking.edit_text(
             f"Sugoi! I got it! 👀\n\n{summary}\n\nShall I proceed, senpai?",
@@ -488,6 +489,7 @@ async def confirm_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     parsed = context.user_data.pop("pending", None)
     mangas = context.user_data.pop("pending_mangas", [])
+    original_text = context.user_data.pop("pending_text", "")
 
     if not parsed:
         await query.edit_message_text("😵 Session expired! Try again, I believe in you!")
@@ -496,7 +498,7 @@ async def confirm_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.edit_message_text("⚡ On it! Deploying full power...")
 
     try:
-        result_msg = await execute_action_data(parsed, mangas, user_id)
+        result_msg = await execute_action_data(parsed, mangas, user_id, original_text)
         await query.edit_message_text(result_msg, parse_mode="Markdown", disable_web_page_preview=True)
         if parsed.get("intent") == "add":
             title = parsed.get("title") or parsed.get("url", "")
@@ -617,7 +619,14 @@ async def _send_manga_info_card(message, title: str):
         pass
 
 
-async def execute_action_data(parsed: dict, mangas: list, user_id: int) -> str:
+_STATUS_KEYWORDS = {
+    "completed": "completed", "complete": "completed", "finished": "completed", "finish": "completed",
+    "dropped": "dropped", "drop": "dropped", "quit": "dropped",
+    "reading": "reading",
+}
+
+
+async def execute_action_data(parsed: dict, mangas: list, user_id: int, original_text: str = "") -> str:
     """Execute write actions and return result message."""
     from fetcher import fetch_manga_title, fetch_manga_info
     intent = parsed.get("intent")
@@ -625,6 +634,13 @@ async def execute_action_data(parsed: dict, mangas: list, user_id: int) -> str:
     url = parsed.get("url")
     chapter = parsed.get("chapter") or 0
     status = parsed.get("status") or "reading"
+
+    # Fallback: if AI missed the status, detect it from the original message
+    if status == "reading" and original_text:
+        for kw, mapped in _STATUS_KEYWORDS.items():
+            if kw in original_text.lower() and mapped != "reading":
+                status = mapped
+                break
 
     if not title and url:
         title = fetch_manga_title(url)
@@ -648,7 +664,8 @@ async def execute_action_data(parsed: dict, mangas: list, user_id: int) -> str:
             update_chapter(user_id, m["id"], chapter)
             if status != "reading":
                 update_status(user_id, m["id"], status)
-            return f"🔥 *{m['title']}* — progress saved at Ch.{chapter}! Keep going!"
+            status_note = f" Marked as {status}! ✅" if status != "reading" else " Keep going!"
+            return f"🔥 *{m['title']}* — Ch.{chapter} saved!{status_note}"
         else:
             manga = add_manga(user_id, title, url, chapter)
             if manga and status != "reading":

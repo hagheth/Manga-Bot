@@ -49,8 +49,10 @@ Rules:
 - If user says "add X" or "save X" with a title/url → intent is "add", extract title, url, chapter
 - If user sends a URL with a chapter number (e.g. "https://... chapter 100") → intent is "update_chapter", extract url and chapter
 - If user says "I've read X until chapter Y" or "I'm reading X at chY" → intent is "update_chapter" (the bot will auto-add if not found)
+- If user says "update X to chapter N and completed/finished/dropped" → intent is "update_chapter", set BOTH chapter AND status fields
 - If user says "I've read X" with no chapter → intent is "add" with status "reading"
 - If user says "I finished X" or "I completed X" → intent is "update_status" with status "completed", only if manga likely exists; otherwise "add" with status "completed"
+- IMPORTANT: whenever the user mentions a status word (finished, completed, dropped, reading) alongside a chapter update, always include the status field in your JSON
 - Keep reply short and friendly, 1 sentence max
 - IMPORTANT: Always return ONLY valid JSON, no extra text, no markdown code blocks"""
 
