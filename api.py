@@ -55,10 +55,21 @@ class ChatRequest(BaseModel):
 
 # ── Manga routes ───────────────────────────────────────────────────────────
 
+def _proxy_covers(manga_list: list) -> list:
+    """Rewrite cover_url to go through our proxy (fixes CORS on web)."""
+    result = []
+    for m in manga_list:
+        if m.get("cover_url"):
+            m = dict(m)
+            m["cover_url"] = f"/proxy/image?url={m['cover_url']}"
+        result.append(m)
+    return result
+
+
 @app.get("/manga")
 def get_manga_list(status: str | None = None):
     """List all manga, optionally filtered by status."""
-    return list_manga(USER_ID, status)
+    return _proxy_covers(list_manga(USER_ID, status))
 
 
 @app.get("/manga/stats")
@@ -99,7 +110,7 @@ def get_one(manga_id: int):
     m = get_manga(USER_ID, manga_id)
     if not m:
         raise HTTPException(status_code=404, detail="Manga not found")
-    return m
+    return _proxy_covers([m])[0]
 
 
 @app.post("/manga", status_code=201)
