@@ -82,8 +82,10 @@ def fetch_manga_info(title: str) -> dict | None:
             total_chapters = attrs.get("lastChapter") or None
             status = attrs.get("status", "").capitalize() or None
 
+            manga_url = f"https://mangadex.org/title/{manga_id}"
+
             return {"title": found_title, "synopsis": synopsis, "cover_url": cover_url,
-                    "total_chapters": total_chapters, "status": status}
+                    "total_chapters": total_chapters, "status": status, "manga_url": manga_url}
 
     except Exception:
         return None
@@ -91,6 +93,16 @@ def fetch_manga_info(title: str) -> dict | None:
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36"
 }
+
+def fetch_mangafire_url(title: str) -> str | None:
+    """
+    Try to get a reading link for a manga title.
+    MangaFire is JS-rendered so we fall back to MangaDex which has a stable URL.
+    """
+    info = fetch_manga_info(title)
+    if info and info.get("manga_url"):
+        return info["manga_url"]
+    return None
 
 # Sites that render titles with JavaScript — fall back to URL slug
 JS_RENDERED_SITES = ["mangafire.to", "mangasee123.com", "manganato.com"]

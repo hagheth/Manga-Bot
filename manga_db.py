@@ -1,9 +1,22 @@
 from db import supabase
 
 
-def add_manga(user_id: int, title: str, url: str = None, chapter: int = 0):
+def add_manga(user_id: int, title: str, url: str = None, chapter: int = 0, cover_url: str = None):
     data = {"user_id": user_id, "title": title, "url": url, "chapter": chapter}
+    if cover_url:
+        data["cover_url"] = cover_url
     result = supabase.table("manga").insert(data).execute()
+    return result.data[0] if result.data else None
+
+
+def update_cover_url(user_id: int, manga_id: int, cover_url: str):
+    result = (
+        supabase.table("manga")
+        .update({"cover_url": cover_url})
+        .eq("id", manga_id)
+        .eq("user_id", user_id)
+        .execute()
+    )
     return result.data[0] if result.data else None
 
 
