@@ -12,7 +12,7 @@ from manga_db import (
     delete_manga_by_keyword,
 )
 from ai import suggest_manga, parse_message, chat_manga
-from fetcher import fetch_manga_title
+from fetcher import fetch_manga_title, fetch_manga_info
 
 load_dotenv()
 
@@ -161,6 +161,7 @@ async def add_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             msg += f"🔗 [Link]({url})\n"
         msg += f"📖 Ch.{chapter} | 🆔 ID: `{manga['id']}`"
         await update.message.reply_text(msg, parse_mode="Markdown")
+        await _send_manga_info_card(update.message, title)
     else:
         await update.message.reply_text("😱 Something went wrong... the scroll was lost! Try again.")
 
@@ -497,6 +498,9 @@ async def confirm_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         result_msg = await execute_action_data(parsed, mangas, user_id)
         await query.edit_message_text(result_msg, parse_mode="Markdown", disable_web_page_preview=True)
+        if parsed.get("intent") == "add":
+            title = parsed.get("title") or parsed.get("url", "")
+            await _send_manga_info_card(query.message, title)
         await send_random_sticker(query.message.chat_id, context)
     except Exception as e:
         logger.error(f"Confirm callback error: {e}")
@@ -589,9 +593,26 @@ async def execute_action(update: Update, context: ContextTypes.DEFAULT_TYPE, par
 
 
 
+async def _send_manga_info_card(message, title: str):
+    """Fetch MangaDex info and send cover + synopsis as a follow-up message."""
+    info = fetch_manga_info(title)
+    if not info:
+        return
+    caption = f"📖 {info['title']}"
+    if info.get("synopsis"):
+        caption += f"\n\n{info['synopsis']}"
+    try:
+        if info.get("cover_url"):
+            await message.reply_photo(photo=info["cover_url"], caption=caption)
+        else:
+            await message.reply_text(caption)
+    except Exception:
+        pass
+
+
 async def execute_action_data(parsed: dict, mangas: list, user_id: int) -> str:
     """Execute write actions and return result message."""
-    from fetcher import fetch_manga_title
+    from fetcher import fetch_manga_title, fetch_manga_info
     intent = parsed.get("intent")
     title = parsed.get("title")
     url = parsed.get("url")
