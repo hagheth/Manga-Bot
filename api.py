@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from manga_db import (
@@ -201,6 +202,11 @@ def manga_cover(title: str):
         raise HTTPException(status_code=404, detail="Cover not found")
     return RedirectResponse(url=info["cover_url"])
 
+
+# ── Flutter web app (served last so API routes take priority) ──────────────
+import os as _os
+if _os.path.isdir("flutter_web"):
+    app.mount("/", StaticFiles(directory="flutter_web", html=True), name="flutter")
 
 # ── AI Chat ────────────────────────────────────────────────────────────────
 
