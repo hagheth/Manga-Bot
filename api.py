@@ -1,5 +1,6 @@
 import os
 from dotenv import load_dotenv
+from urllib.parse import quote
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import RedirectResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -63,7 +64,7 @@ def _proxy_covers(manga_list: list) -> list:
     for m in manga_list:
         if m.get("cover_url"):
             m = dict(m)
-            m["cover_url"] = f"{RENDER_BASE}/proxy/image?url={m['cover_url']}"
+            m["cover_url"] = f"{RENDER_BASE}/proxy/image?url={quote(m['cover_url'], safe='')}"
         result.append(m)
     return result
 
@@ -211,12 +212,12 @@ def manga_info(title: str):
 def proxy_image(url: str):
     """Proxy external images to avoid CORS issues on web."""
     try:
-        with httpx.Client(timeout=10, follow_redirects=True) as client:
+        with httpx.Client(timeout=15, follow_redirects=True) as client:
             r = client.get(url)
             r.raise_for_status()
             return Response(content=r.content, media_type=r.headers.get("content-type", "image/jpeg"))
-    except Exception:
-        raise HTTPException(status_code=404, detail="Image not found")
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=f"Image not found: {e}")
 
 
 @app.get("/mangainfo/cover")
