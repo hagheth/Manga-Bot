@@ -598,7 +598,14 @@ async def _send_manga_info_card(message, title: str):
     info = fetch_manga_info(title)
     if not info:
         return
+    meta = []
+    if info.get("status"):
+        meta.append(info["status"])
+    if info.get("total_chapters"):
+        meta.append(f"{info['total_chapters']} chapters")
     caption = f"📖 {info['title']}"
+    if meta:
+        caption += f"  •  {' | '.join(meta)}"
     if info.get("synopsis"):
         caption += f"\n\n{info['synopsis']}"
     try:

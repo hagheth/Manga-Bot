@@ -72,7 +72,11 @@ def fetch_manga_info(title: str) -> dict | None:
                         cover_url = f"https://uploads.mangadex.org/covers/{manga_id}/{filename}.256.jpg"
                     break
 
-            return {"title": found_title, "synopsis": synopsis, "cover_url": cover_url}
+            total_chapters = attrs.get("lastChapter") or None
+            status = attrs.get("status", "").capitalize() or None
+
+            return {"title": found_title, "synopsis": synopsis, "cover_url": cover_url,
+                    "total_chapters": total_chapters, "status": status}
 
     except Exception:
         return None
