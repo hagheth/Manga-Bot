@@ -55,13 +55,15 @@ class ChatRequest(BaseModel):
 
 # ── Manga routes ───────────────────────────────────────────────────────────
 
+RENDER_BASE = "https://manga-bot-k4yd.onrender.com"
+
 def _proxy_covers(manga_list: list) -> list:
     """Rewrite cover_url to go through our proxy (fixes CORS on web)."""
     result = []
     for m in manga_list:
         if m.get("cover_url"):
             m = dict(m)
-            m["cover_url"] = f"/proxy/image?url={m['cover_url']}"
+            m["cover_url"] = f"{RENDER_BASE}/proxy/image?url={m['cover_url']}"
         result.append(m)
     return result
 
