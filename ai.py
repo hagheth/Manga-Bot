@@ -57,12 +57,26 @@ Rules:
 - IMPORTANT: Always return ONLY valid JSON, no extra text, no markdown code blocks"""
 
 
+_STATUS_WORDS = {
+    "completed": "completed", "complete": "completed", "finished": "completed", "finish": "completed",
+    "dropped": "dropped", "drop": "dropped",
+    "reading": "reading",
+}
+
+
 def _preparse(user_message: str) -> dict | None:
     """Detect obvious patterns before hitting the AI."""
     import re
     url_match = re.search(r'https?://\S+', user_message)
     ch_match = re.search(r'(?:chapter|ch|c)\s*(\d+)', user_message, re.IGNORECASE)
     text_lower = user_message.lower()
+
+    # Detect status from message
+    status = "reading"
+    for kw, mapped in _STATUS_WORDS.items():
+        if re.search(rf'\b{kw}\b', text_lower):
+            status = mapped
+            break
 
     if url_match and ch_match:
         intent = "update_chapter" if any(w in text_lower for w in ("read", "on", "at", "until", "till")) else "add"
@@ -71,9 +85,24 @@ def _preparse(user_message: str) -> dict | None:
             "url": url_match.group(0),
             "chapter": int(ch_match.group(1)),
             "title": None,
-            "status": "reading",
+            "status": status,
             "reply": "Got it!",
         }
+
+    # "add <title> chapter N [status]" — no URL
+    add_match = re.match(r'^(?:add|save)\s+(.+?)\s+(?:chapter|ch|c)\s*(\d+)', user_message, re.IGNORECASE)
+    if add_match:
+        raw_title = add_match.group(1).strip()
+        chapter = int(add_match.group(2))
+        return {
+            "intent": "add",
+            "title": raw_title.title(),
+            "url": None,
+            "chapter": chapter,
+            "status": status,
+            "reply": "Got it!",
+        }
+
     return None
 
 
