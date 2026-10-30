@@ -1,5 +1,6 @@
 import os
 from dotenv import load_dotenv
+import httpx
 from urllib.parse import quote
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import RedirectResponse, Response
