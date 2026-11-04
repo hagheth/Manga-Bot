@@ -117,8 +117,9 @@ def parse_message(user_message: str, manga_list: list) -> dict:
     # Give AI context about existing manga
     existing = ""
     if manga_list:
-        titles = [f"#{m['id']} {m['title']} (ch{m['chapter']}, {m['status']})" for m in manga_list]
-        existing = "\n\nUser's current manga list:\n" + "\n".join(titles)
+        titles = [f"#{m['id']} {m['title']} (ch{m['chapter']}, {m['status']}, updated {m.get('updated_at','')[:10]})" for m in manga_list]
+        existing = "\n\nUser's current manga list (sorted by most recently updated first):\n" + "\n".join(titles)
+        existing += f"\n\nMost recently updated manga: {manga_list[0]['title']} (chapter {manga_list[0]['chapter']})"
 
     response = client.chat.completions.create(
         model="openai/gpt-oss-20b",
@@ -178,8 +179,9 @@ def chat_manga(user_message: str, manga_list: list = None) -> tuple[str, str]:
     if manga_list:
         lines = []
         for m in manga_list:
-            lines.append(f"- {m['title']}: {m['status']}, chapter {m['chapter']}")
-        context = "\n\nThe user's manga list:\n" + "\n".join(lines)
+            lines.append(f"- {m['title']}: {m['status']}, chapter {m['chapter']}, last updated {m.get('updated_at','')[:10]}")
+        context = "\n\nThe user's manga list (sorted by most recently updated first):\n" + "\n".join(lines)
+        context += f"\n\nMost recently updated manga: {manga_list[0]['title']} (chapter {manga_list[0]['chapter']})"
 
     response = client.chat.completions.create(
         model="openai/gpt-oss-20b",

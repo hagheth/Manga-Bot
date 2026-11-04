@@ -24,7 +24,7 @@ def list_manga(user_id: int, status: str = None):
     query = supabase.table("manga").select("*").eq("user_id", user_id)
     if status:
         query = query.eq("status", status)
-    result = query.order("created_at", desc=True).execute()
+    result = query.order("updated_at", desc=True).execute()
     return result.data
 
 

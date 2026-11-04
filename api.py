@@ -89,6 +89,8 @@ def get_stats():
     total_chapters = sum(m["chapter"] for m in all_manga)
     avg_chapters = round(total_chapters / total, 1)
     most_read = max(all_manga, key=lambda m: m["chapter"])
+    # list_manga now returns sorted by updated_at desc, so first entry is most recent
+    most_recent = all_manga[0] if all_manga else None
     rated = [m for m in all_manga if m.get("rating")]
     top_rated = max(rated, key=lambda m: m["rating"]) if rated else None
     return {
@@ -99,6 +101,7 @@ def get_stats():
         "total_chapters": total_chapters,
         "avg_chapters": avg_chapters,
         "most_read": most_read,
+        "most_recent": most_recent,
         "top_rated": top_rated,
     }
 
