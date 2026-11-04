@@ -94045,8 +94045,8 @@ I(a){return new A.Ca(B.Nl,"Manga Bookmark",A.wN(B.BJ,B.ag,B.jx,B.E0,A.aL3(new A.
 A.C6.prototype={
 aj(){return new A.X1()}}
 A.X1.prototype={
-I(a){var s=null,r=A.bf(a,s,t.w).w.r.d,q=r>0?r:16,p=this.d,o=A.em(40),n=A.b([new A.dM(0,B.dl,A.ar(64,B.l.C()>>>16&255,B.l.C()>>>8&255,B.l.C()&255),B.Ot,20)],t.sq)
-return A.aka(s,s,A.kC(B.bO,A.b([new A.Oz(p,B.JX,s),A.D_(q+4,A.ig(A.eJ(s,A.ec(A.ad1(3,new A.awN(this),!0,t.l7),B.Q,B.G,B.aR,0),B.u,s,new A.cW(B.EJ,s,s,o,n,s,B.az),s,62,s,B.Hq,s,s,s),s,s),s,s,0,0,s,s)],t.p),B.P,B.c6,s))}}
+I(a){var s=null,r=A.bf(a,s,t.w).w.r.d,q=r>0?r/2:8,p=this.d,o=A.em(40),n=A.b([new A.dM(0,B.dl,A.ar(64,B.l.C()>>>16&255,B.l.C()>>>8&255,B.l.C()&255),B.Ot,20)],t.sq)
+return A.aka(s,s,A.kC(B.bO,A.b([new A.Oz(p,B.JX,s),A.D_(q,A.ig(A.eJ(s,A.ec(A.ad1(3,new A.awN(this),!0,t.l7),B.Q,B.G,B.aR,0),B.u,s,new A.cW(B.EJ,s,s,o,n,s,B.az),s,62,s,B.Hq,s,s,s),s,s),s,s,0,0,s,s)],t.p),B.P,B.c6,s))}}
 A.awN.prototype={
 $1(a){var s=null,r=this.a,q=r.d===a,p=q?64:52,o=q?B.EM:B.E,n=A.em(28),m=A.qi(B.Lb[a],B.k,s,24)
 p=A.j3(50,p)
