@@ -1,6 +1,6 @@
 {
-    "name": "manga_app",
-    "short_name": "manga_app",
+    "name": "Manga",
+    "short_name": "Manga",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
