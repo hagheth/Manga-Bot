@@ -93,6 +93,7 @@ def get_stats():
     most_recent = all_manga[0] if all_manga else None
     rated = [m for m in all_manga if m.get("rating")]
     top_rated = max(rated, key=lambda m: m["rating"]) if rated else None
+    avg_rating = round(sum(m["rating"] for m in rated) / len(rated), 1) if rated else None
     return {
         "total": total,
         "reading": reading,
@@ -103,6 +104,7 @@ def get_stats():
         "most_read": most_read,
         "most_recent": most_recent,
         "top_rated": top_rated,
+        "avg_rating": avg_rating,
     }
 
 
