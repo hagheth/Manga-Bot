@@ -94,6 +94,15 @@ def get_stats():
     rated = [m for m in all_manga if m.get("rating")]
     top_rated = max(rated, key=lambda m: m["rating"]) if rated else None
     avg_rating = round(sum(m["rating"] for m in rated) / len(rated), 1) if rated else None
+    # Build activity map: date -> list of {title, action}
+    activity: dict = {}
+    for m in all_manga:
+        created = m.get("created_at", "")[:10]
+        updated = m.get("updated_at", "")[:10]
+        if created:
+            activity.setdefault(created, []).append({"title": m["title"], "action": "added"})
+        if updated and updated != created:
+            activity.setdefault(updated, []).append({"title": m["title"], "action": "updated"})
     return {
         "total": total,
         "reading": reading,
@@ -105,6 +114,7 @@ def get_stats():
         "most_recent": most_recent,
         "top_rated": top_rated,
         "avg_rating": avg_rating,
+        "activity": activity,
     }
 
 
