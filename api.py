@@ -122,7 +122,11 @@ def get_stats():
 def get_recommendations():
     """Return 5 AI-generated manga recommendations based on the user's list."""
     manga_list = list_manga(USER_ID)
-    return recommend_manga(manga_list)
+    recs = recommend_manga(manga_list)
+    for r in recs:
+        if r.get("cover_url"):
+            r["cover_url"] = f"{RENDER_BASE}/proxy/image?url={quote(r['cover_url'], safe='')}"
+    return recs
 
 
 @app.get("/manga/search")
