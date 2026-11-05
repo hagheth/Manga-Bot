@@ -484,7 +484,7 @@ class _InputBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final keyboardH = MediaQuery.of(context).viewInsets.bottom;
-    final bottomPad = keyboardH > 0 ? keyboardH : 84.0;
+    final bottomPad = keyboardH > 0 ? 10.0 : 84.0;
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
