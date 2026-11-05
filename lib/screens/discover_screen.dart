@@ -193,8 +193,8 @@ class _CardStackState extends State<_CardStack> with SingleTickerProviderStateMi
             alignment: Alignment.topCenter,
             children: [
               for (int i = min(2, _deck.length - 1); i >= 1; i--)
-                _BackCard(rec: _deck[i], width: cardW, height: cardH,
-                    offset: i * 12.0, scale: 1 - i * 0.05),
+                _BackCard(rec: _deck[i], width: cardW * (1 + i * 0.06), height: cardH,
+                    offset: i * 10.0, scale: 1.0),
               GestureDetector(
                 onHorizontalDragUpdate: _onDragUpdate,
                 onHorizontalDragEnd: _onDragEnd,
