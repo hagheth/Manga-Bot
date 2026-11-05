@@ -266,32 +266,12 @@ def recommend_manga(manga_list: list) -> list:
         logger.warning(f"Failed to parse recommend response: {candidate!r}")
         return []
 
-    # Fetch cover art from AniList for each recommendation
+    # Fetch cover art from MangaDex for each recommendation
+    from fetcher import fetch_manga_info
     for rec in results:
-        rec["cover_url"] = _fetch_anilist_cover(rec.get("title", ""))
+        info = fetch_manga_info(rec.get("title", ""))
+        rec["cover_url"] = info.get("cover_url") if info else None
     return results
-
-
-def _fetch_anilist_cover(title: str) -> str | None:
-    """Query AniList GraphQL API for a manga cover image URL."""
-    import httpx
-    query = """
-    query ($title: String) {
-      Media(search: $title, type: MANGA) {
-        coverImage { large }
-      }
-    }
-    """
-    try:
-        r = httpx.post(
-            "https://graphql.anilist.co",
-            json={"query": query, "variables": {"title": title}},
-            timeout=8,
-        )
-        data = r.json()
-        return data["data"]["Media"]["coverImage"]["large"]
-    except Exception:
-        return None
 
 
 def suggest_manga(manga_list: list, suggest_new: bool = False) -> str:
