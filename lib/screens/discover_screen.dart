@@ -93,6 +93,17 @@ class _CardStackState extends State<_CardStack> with SingleTickerProviderStateMi
     super.dispose();
   }
 
+  void _showDetail(BuildContext context, Map<String, dynamic> rec) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (_) => _DetailSheet(rec: rec),
+    );
+  }
+
   void _onDragUpdate(DragUpdateDetails d) {
     setState(() {
       _isDragging = true;
@@ -133,8 +144,8 @@ class _CardStackState extends State<_CardStack> with SingleTickerProviderStateMi
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    final cardW = size.width - 40;
-    final cardH = size.height * 0.60;
+    final cardW = size.width * 0.65;
+    final cardH = cardW * 1.45;
 
     return Column(
       children: [
@@ -145,34 +156,80 @@ class _CardStackState extends State<_CardStack> with SingleTickerProviderStateMi
           style: TextStyle(fontSize: 12, color: Colors.grey[500]),
         ),
         const SizedBox(height: 16),
-        Expanded(
+        // Card stack
+        SizedBox(
+          height: cardH + 20,
           child: Stack(
             alignment: Alignment.topCenter,
             children: [
-              // Back cards (index 2 and 1 shown behind)
               for (int i = min(2, _deck.length - 1); i >= 1; i--)
-                _BackCard(
-                  rec: _deck[i],
-                  width: cardW,
-                  height: cardH,
-                  offset: i * 10.0,
-                  scale: 1 - i * 0.04,
-                ),
-              // Top card (draggable)
+                _BackCard(rec: _deck[i], width: cardW, height: cardH,
+                    offset: i * 12.0, scale: 1 - i * 0.05),
               GestureDetector(
                 onHorizontalDragUpdate: _onDragUpdate,
                 onHorizontalDragEnd: _onDragEnd,
+                onTap: () => _showDetail(context, _deck[0]),
                 child: Transform.translate(
                   offset: _drag,
                   child: Transform.rotate(
-                    angle: (_drag.dx / (size.width)) * 0.3,
-                    child: _TopCard(
-                      rec: _deck[0],
-                      width: cardW,
-                      height: cardH,
-                      dragDx: _drag.dx,
-                    ),
+                    angle: (_drag.dx / size.width) * 0.3,
+                    child: _TopCard(rec: _deck[0], width: cardW, height: cardH, dragDx: _drag.dx),
                   ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+        // Info below card
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32),
+          child: Column(
+            children: [
+              Text('${_deck[0]['title'] ?? ''}',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                  textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis),
+              const SizedBox(height: 6),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if ((_deck[0]['manga_status'] ?? '').toString().isNotEmpty)
+                    _StatusBadge(
+                      status: '${_deck[0]['manga_status']}',
+                      isOngoing: '${_deck[0]['manga_status']}'.toLowerCase() == 'ongoing',
+                      isCompleted: '${_deck[0]['manga_status']}'.toLowerCase() == 'completed',
+                    ),
+                  if (_deck[0]['total_chapters'] != null) ...[
+                    const SizedBox(width: 8),
+                    Text('${_deck[0]['total_chapters']} ch',
+                        style: TextStyle(fontSize: 12, color: Colors.grey[500])),
+                  ],
+                ],
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 6, runSpacing: 4,
+                children: '${_deck[0]['genre'] ?? ''}'.split(',')
+                    .map((g) => g.trim()).where((g) => g.isNotEmpty)
+                    .map((g) => _GenreChip(label: g)).toList(),
+              ),
+              const SizedBox(height: 10),
+              Text('${_deck[0]['reason'] ?? ''}',
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600], height: 1.4),
+                  textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis),
+              const SizedBox(height: 14),
+              SizedBox(
+                width: double.infinity,
+                height: 44,
+                child: ElevatedButton(
+                  onPressed: () => _showDetail(context, _deck[0]),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1A1A1A),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  child: const Text('View Details', style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
@@ -223,126 +280,51 @@ class _TopCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final title  = '${rec['title'] ?? ''}';
-    final genre  = '${rec['genre'] ?? ''}';
-    final reason = '${rec['reason'] ?? ''}';
-    final status = '${rec['manga_status'] ?? ''}';
-    final chapters = rec['total_chapters'];
-    final cover  = rec['cover_url'] as String?;
-    final isOngoing   = status.toLowerCase() == 'ongoing';
-    final isCompleted = status.toLowerCase() == 'completed';
-
-    // Like/pass indicator opacity
-    final likeOpacity  = (dragDx / 120).clamp(0.0, 1.0);
-    final passOpacity  = (-dragDx / 120).clamp(0.0, 1.0);
+    final cover = rec['cover_url'] as String?;
+    final likeOpacity = (dragDx / 100).clamp(0.0, 1.0);
+    final passOpacity = (-dragDx / 100).clamp(0.0, 1.0);
 
     return Container(
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.14), blurRadius: 24, offset: const Offset(0, 10)),
+          BoxShadow(color: Colors.black.withOpacity(0.18), blurRadius: 24, offset: const Offset(0, 10)),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(24),
         child: Stack(
+          fit: StackFit.expand,
           children: [
-            // Cover image — top 48%
-            Positioned.fill(
-              child: Column(
-                children: [
-                  Expanded(
-                    flex: 48,
-                    child: cover != null
-                        ? Image.network(cover, fit: BoxFit.cover, width: double.infinity,
-                            errorBuilder: (_, __, ___) => _coverPlaceholder())
-                        : _coverPlaceholder(),
-                  ),
-                  Expanded(flex: 52, child: const SizedBox()),
-                ],
-              ),
-            ),
-            // Info panel — bottom 52%
-            Positioned(
-              left: 0, right: 0, bottom: 0,
-              child: Container(
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.zero),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis),
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        if (status.isNotEmpty)
-                          _StatusBadge(status: status, isOngoing: isOngoing, isCompleted: isCompleted),
-                        if (status.isNotEmpty) const SizedBox(width: 8),
-                        if (chapters != null)
-                          Text('$chapters ch',
-                              style: TextStyle(fontSize: 12, color: Colors.grey[500])),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 6, runSpacing: 4,
-                      children: genre.split(',').map((g) => g.trim()).where((g) => g.isNotEmpty)
-                          .map((g) => _GenreChip(label: g)).toList(),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(reason,
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600], height: 1.4),
-                        maxLines: 2, overflow: TextOverflow.ellipsis),
-                    const SizedBox(height: 10),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 42,
-                      child: ElevatedButton(
-                        onPressed: () => _showDetail(context, rec),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF1A1A1A),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                        ),
-                        child: const Text('View Details', style: TextStyle(fontWeight: FontWeight.bold)),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            // Like indicator
+            cover != null
+                ? Image.network(cover, fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => _placeholder())
+                : _placeholder(),
             if (likeOpacity > 0)
-              Positioned(top: 24, left: 20,
+              Positioned(top: 16, left: 16,
                 child: Opacity(opacity: likeOpacity,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
-                        border: Border.all(color: Colors.green, width: 2),
-                        borderRadius: BorderRadius.circular(8)),
-                    child: const Text('ADD', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 18)),
+                        border: Border.all(color: Colors.green, width: 2.5),
+                        borderRadius: BorderRadius.circular(8),
+                        color: Colors.white.withOpacity(0.15)),
+                    child: const Text('ADD', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 16)),
                   ),
                 ),
               ),
-            // Pass indicator
             if (passOpacity > 0)
-              Positioned(top: 24, right: 20,
+              Positioned(top: 16, right: 16,
                 child: Opacity(opacity: passOpacity,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
-                        border: Border.all(color: Colors.red, width: 2),
-                        borderRadius: BorderRadius.circular(8)),
-                    child: const Text('SKIP', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 18)),
+                        border: Border.all(color: Colors.red, width: 2.5),
+                        borderRadius: BorderRadius.circular(8),
+                        color: Colors.white.withOpacity(0.15)),
+                    child: const Text('SKIP', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 16)),
                   ),
                 ),
               ),
@@ -352,18 +334,7 @@ class _TopCard extends StatelessWidget {
     );
   }
 
-  void _showDetail(BuildContext context, Map<String, dynamic> rec) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (_) => _DetailSheet(rec: rec),
-    );
-  }
-
-  Widget _coverPlaceholder() => Container(
+  Widget _placeholder() => Container(
     color: const Color(0xFFDDDDDD),
     child: const Center(child: Icon(Icons.menu_book_rounded, color: Colors.grey, size: 48)),
   );
