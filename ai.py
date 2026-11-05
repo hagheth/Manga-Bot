@@ -209,9 +209,11 @@ def chat_manga(user_message: str, manga_list: list = None) -> tuple[str, str]:
     return text, emotion
 
 
-def recommend_manga(manga_list: list) -> list:
-    """Return 5 structured recommendations not already in the user's list."""
+def recommend_manga(manga_list: list, exclude_titles: list = None) -> list:
+    """Return structured recommendations not already in the user's list."""
     existing_titles = [m["title"].lower() for m in manga_list]
+    if exclude_titles:
+        existing_titles = existing_titles + [t.lower() for t in exclude_titles]
 
     lines = []
     for m in manga_list:
@@ -222,9 +224,15 @@ def recommend_manga(manga_list: list) -> list:
         lines.append(line)
     list_text = "\n".join(lines) if lines else "No manga yet."
 
+    exclude_note = ""
+    if exclude_titles:
+        exclude_note = "\n\nDo NOT recommend any of these already-suggested titles:\n" + \
+            "\n".join(f"- {t}" for t in exclude_titles)
+
     prompt = (
         "You are a manga recommendation expert. Based on this person's reading history:\n\n"
         + list_text
+        + exclude_note
         + "\n\nRecommend exactly 10 NEW manga they would enjoy that are NOT already in their list. "
         "Return ONLY a JSON array, no extra text. Format:\n"
         '[{"title": "...", "genre": "...", "reason": "..."}]\n'
