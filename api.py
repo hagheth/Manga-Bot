@@ -128,7 +128,8 @@ def get_recommendations():
 @app.get("/manga/recommend/debug")
 def get_recommendations_debug():
     """Debug: return raw AI response for recommendations."""
-    from ai import client, json
+    import json as _json
+    from ai import client
     manga_list = list_manga(USER_ID)
     lines = [f"- {m['title']} (status: {m['status']})" for m in manga_list]
     list_text = "\n".join(lines) if lines else "No manga yet."
@@ -147,7 +148,7 @@ def get_recommendations_debug():
         temperature=0.7,
     )
     raw = response.choices[0].message.content.strip()
-    return {"raw": raw}
+    return {"raw": raw, "manga_count": len(manga_list)}
 
 
 @app.get("/manga/search")
