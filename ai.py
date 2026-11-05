@@ -225,7 +225,7 @@ def recommend_manga(manga_list: list) -> list:
     prompt = (
         "You are a manga recommendation expert. Based on this person's reading history:\n\n"
         + list_text
-        + "\n\nRecommend exactly 5 NEW manga they would enjoy that are NOT already in their list. "
+        + "\n\nRecommend exactly 10 NEW manga they would enjoy that are NOT already in their list. "
         "Return ONLY a JSON array, no extra text. Format:\n"
         '[{"title": "...", "genre": "...", "reason": "..."}]\n'
         "- title: exact manga title\n"
@@ -240,7 +240,7 @@ def recommend_manga(manga_list: list) -> list:
             {"role": "system", "content": "You are a manga recommendation expert. Always respond with valid JSON only, no extra text."},
             {"role": "user", "content": prompt},
         ],
-        max_tokens=1000,
+        max_tokens=1800,
         temperature=0.7,
         tool_choice="none",
     )
