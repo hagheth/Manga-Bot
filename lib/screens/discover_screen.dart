@@ -93,43 +93,77 @@ class _RecommendCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: const Color(0xFFF5F5F5),
           borderRadius: BorderRadius.circular(16),
         ),
-        child: Column(
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    title,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
+            // Cover image
+            ClipRRect(
+              borderRadius: const BorderRadius.horizontal(left: Radius.circular(16)),
+              child: rec['cover_url'] != null
+                  ? Image.network(
+                      rec['cover_url'] as String,
+                      width: 90,
+                      height: 130,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => _PlaceholderCover(),
+                    )
+                  : _PlaceholderCover(),
+            ),
+            // Info
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(title,
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                        ),
+                        const Icon(Icons.chevron_right_rounded, color: Colors.grey, size: 18),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Wrap(
+                      spacing: 4,
+                      runSpacing: 4,
+                      children: genre
+                          .split(',')
+                          .map((g) => g.trim())
+                          .where((g) => g.isNotEmpty)
+                          .map((g) => _GenreChip(label: g))
+                          .toList(),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(reason,
+                        style: TextStyle(fontSize: 12, color: Colors.grey[700], height: 1.4),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis),
+                  ],
                 ),
-                const Icon(Icons.chevron_right_rounded, color: Colors.grey),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 6,
-              children: genre
-                  .split(',')
-                  .map((g) => g.trim())
-                  .where((g) => g.isNotEmpty)
-                  .map((g) => _GenreChip(label: g))
-                  .toList(),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              reason,
-              style: TextStyle(fontSize: 13, color: Colors.grey[700], height: 1.4),
+              ),
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _PlaceholderCover extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 90,
+      height: 130,
+      color: const Color(0xFFDDDDDD),
+      child: const Icon(Icons.menu_book_rounded, color: Colors.grey, size: 32),
     );
   }
 }
@@ -194,6 +228,19 @@ class _DetailSheetState extends State<_DetailSheet> {
             ),
           ),
           const SizedBox(height: 20),
+          if (widget.rec['cover_url'] != null)
+            Center(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.network(
+                  widget.rec['cover_url'] as String,
+                  height: 180,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                ),
+              ),
+            ),
+          const SizedBox(height: 16),
           Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 22)),
           const SizedBox(height: 10),
           Wrap(
