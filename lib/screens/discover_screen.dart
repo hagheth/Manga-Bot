@@ -115,20 +115,61 @@ class _RecommendGridState extends State<_RecommendGrid> {
 
   @override
   Widget build(BuildContext context) {
-    return GridView.builder(
+    final cardW = 120.0;
+    final cardH = cardW * 1.45;
+
+    return SingleChildScrollView(
       controller: _scrollCtrl,
-      padding: const EdgeInsets.fromLTRB(12, 4, 12, 100),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 8,
-        mainAxisSpacing: 8,
-        childAspectRatio: 0.72,
-      ),
-      itemCount: _items.length.clamp(0, 10),
-      itemBuilder: (context, i) => _BentoCard(
-        rec: _items[i],
-        colorIndex: i % _palette.length,
-        onTap: () => _showDetail(_items[i]),
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 100),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (int i = 0; i < _items.length.clamp(0, 10); i++)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: GestureDetector(
+                onTap: () => _showDetail(_items[i]),
+                child: SizedBox(
+                  width: cardW,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: SizedBox(
+                          width: cardW,
+                          height: cardH,
+                          child: _items[i]['cover_url'] != null
+                              ? Image.network(
+                                  '${_items[i]['cover_url']}',
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) =>
+                                      Container(color: _palette[i % _palette.length]),
+                                )
+                              : Container(color: _palette[i % _palette.length]),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        '${_items[i]['title'] ?? ''}',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, height: 1.3),
+                      ),
+                      if (('${_items[i]['genre'] ?? ''}').split(',').first.trim().isNotEmpty)
+                        Text(
+                          '${_items[i]['genre'] ?? ''}'.split(',').first.trim(),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
