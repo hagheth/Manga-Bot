@@ -142,8 +142,11 @@ def get_recommendations_debug():
         "Return only the JSON array."
     )
     response = client.chat.completions.create(
-        model="openai/gpt-oss-20b",
-        messages=[{"role": "user", "content": prompt}],
+        model="llama-3.3-70b-versatile",
+        messages=[
+            {"role": "system", "content": "You are a manga recommendation expert. Always respond with valid JSON only."},
+            {"role": "user", "content": prompt},
+        ],
         max_tokens=600,
         temperature=0.7,
     )
