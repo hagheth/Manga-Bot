@@ -91,11 +91,7 @@ class _DiscoverGridState extends State<_DiscoverGrid> {
       try {
         final data = await _api.getRecommendations(exclude: seenTitles.toList());
         if (!mounted) return;
-        // Hard dedup — remove any title the AI returned anyway
-        final unique = data
-            .where((r) => !seenTitles.contains('${r['title'] ?? ''}'.toLowerCase()))
-            .toList();
-        setState(() => _rows[i] = unique);
+        setState(() => _rows[i] = data);
       } catch (_) {
         if (!mounted) return;
         setState(() => _rows[i] = []);
@@ -129,7 +125,7 @@ class _DiscoverGridState extends State<_DiscoverGrid> {
           child: row == null
               ? const Center(child: CircularProgressIndicator(strokeWidth: 2))
               : row.isEmpty
-                  ? const SizedBox.shrink()
+                  ? const SizedBox.shrink() // hidden if truly empty
                   : ListView.builder(
                       scrollDirection: Axis.horizontal,
                       padding: const EdgeInsets.symmetric(horizontal: 8),
