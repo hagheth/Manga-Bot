@@ -183,7 +183,9 @@ class _CardStackState extends State<_CardStack> with SingleTickerProviderStateMi
         // Card stack
         SizedBox(
           height: cardH + 20,
-          child: Stack(
+          child: _deck.isEmpty
+              ? const SizedBox.shrink()
+              : Stack(
             alignment: Alignment.topCenter,
             children: [
               for (int i = min(2, _deck.length - 1); i >= 1; i--)
@@ -206,6 +208,9 @@ class _CardStackState extends State<_CardStack> with SingleTickerProviderStateMi
         ),
         const SizedBox(height: 20),
         // Info below card
+        if (_deck.isEmpty)
+          const Expanded(child: Center(child: CircularProgressIndicator()))
+        else
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 32),
           child: Column(
