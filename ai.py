@@ -266,11 +266,18 @@ def recommend_manga(manga_list: list) -> list:
         logger.warning(f"Failed to parse recommend response: {candidate!r}")
         return []
 
-    # Fetch cover art from MangaDex for each recommendation
+    # Fetch cover, chapter count and status from MangaDex
     from fetcher import fetch_manga_info
     for rec in results:
         info = fetch_manga_info(rec.get("title", ""))
-        rec["cover_url"] = info.get("cover_url") if info else None
+        if info:
+            rec["cover_url"] = info.get("cover_url")
+            rec["total_chapters"] = info.get("total_chapters")
+            rec["manga_status"] = info.get("status")
+        else:
+            rec["cover_url"] = None
+            rec["total_chapters"] = None
+            rec["manga_status"] = None
     return results
 
 
