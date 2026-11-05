@@ -75,17 +75,26 @@ class _DiscoverGridState extends State<_DiscoverGrid> {
   void initState() {
     super.initState();
     _rows = [widget.initialRecs, null, null, null, null];
-    for (int i = 1; i < 5; i++) _fetch(i);
+    _fetchRemaining();
   }
 
-  Future<void> _fetch(int i) async {
-    try {
-      final data = await _api.getRecommendations();
-      if (!mounted) return;
-      setState(() => _rows[i] = data);
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => _rows[i] = []);
+  Future<void> _fetchRemaining() async {
+    for (int i = 1; i < 5; i++) {
+      // Collect all titles seen so far to pass as exclude
+      final seen = _rows
+          .whereType<List<Map<String, dynamic>>>()
+          .expand((r) => r)
+          .map((r) => '${r['title'] ?? ''}')
+          .where((t) => t.isNotEmpty)
+          .toList();
+      try {
+        final data = await _api.getRecommendations(exclude: seen);
+        if (!mounted) return;
+        setState(() => _rows[i] = data);
+      } catch (_) {
+        if (!mounted) return;
+        setState(() => _rows[i] = []);
+      }
     }
   }
 
