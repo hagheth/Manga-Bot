@@ -175,26 +175,43 @@ class _CardStackState extends State<_CardStack> with SingleTickerProviderStateMi
     final cardW = size.width * 0.65;
     final cardH = cardW * 1.45;
 
+    final sideOffset = cardW * 0.74;
+
     return Column(
       children: [
         const SizedBox(height: 8),
-        // Hint text
-        Text(
-          'Swipe to explore',
-          style: TextStyle(fontSize: 12, color: Colors.grey[500]),
-        ),
+        Text('Swipe to explore',
+            style: TextStyle(fontSize: 12, color: Colors.grey[500])),
         const SizedBox(height: 16),
-        // Card stack
+        // Card stack — horizontal fan
         SizedBox(
-          height: cardH + 20,
+          height: cardH,
+          width: double.infinity,
           child: _deck.isEmpty
               ? const SizedBox.shrink()
               : Stack(
-            alignment: Alignment.topCenter,
+            alignment: Alignment.center,
+            clipBehavior: Clip.none,
             children: [
-              for (int i = min(2, _deck.length - 1); i >= 1; i--)
-                _BackCard(rec: _deck[i], width: cardW * (1 + i * 0.06), height: cardH,
-                    offset: i * 10.0, scale: 1.0),
+              // Left peeking card
+              if (_deck.length > 2)
+                Transform.translate(
+                  offset: Offset(-sideOffset, 0),
+                  child: Transform.scale(
+                    scale: 0.88,
+                    child: _BackCard(width: cardW, height: cardH),
+                  ),
+                ),
+              // Right peeking card
+              if (_deck.length > 1)
+                Transform.translate(
+                  offset: Offset(sideOffset, 0),
+                  child: Transform.scale(
+                    scale: 0.88,
+                    child: _BackCard(width: cardW, height: cardH),
+                  ),
+                ),
+              // Top draggable card
               GestureDetector(
                 onHorizontalDragUpdate: _onDragUpdate,
                 onHorizontalDragEnd: _onDragEnd,
@@ -202,7 +219,7 @@ class _CardStackState extends State<_CardStack> with SingleTickerProviderStateMi
                 child: Transform.translate(
                   offset: _drag,
                   child: Transform.rotate(
-                    angle: (_drag.dx / size.width) * 0.3,
+                    angle: (_drag.dx / size.width) * 0.25,
                     child: _TopCard(rec: _deck[0], width: cardW, height: cardH, dragDx: _drag.dx),
                   ),
                 ),
@@ -210,6 +227,25 @@ class _CardStackState extends State<_CardStack> with SingleTickerProviderStateMi
             ],
           ),
         ),
+        const SizedBox(height: 16),
+        // Dot indicator
+        if (_deck.isNotEmpty)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(5, (i) {
+              final active = i == (_swiped % 5);
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: active ? 20 : 7,
+                height: 7,
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                decoration: BoxDecoration(
+                  color: active ? const Color(0xFF1A1A1A) : Colors.grey[300],
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              );
+            }),
+          ),
         const SizedBox(height: 20),
         // Info below card
         if (_deck.isEmpty)
@@ -277,28 +313,20 @@ class _CardStackState extends State<_CardStack> with SingleTickerProviderStateMi
 // ── Back card (behind stack) ──────────────────────────────────────────────────
 
 class _BackCard extends StatelessWidget {
-  final Map<String, dynamic> rec;
-  final double width, height, offset, scale;
-  const _BackCard({required this.rec, required this.width, required this.height,
-      required this.offset, required this.scale});
+  final double width, height;
+  const _BackCard({required this.width, required this.height});
 
   @override
   Widget build(BuildContext context) {
-    return Transform.translate(
-      offset: Offset(0, offset),
-      child: Transform.scale(
-        scale: scale,
-        child: Container(
-          width: width,
-          height: height,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(28),
-            boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 20, offset: const Offset(0, 8)),
-            ],
-          ),
-        ),
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 20, offset: const Offset(0, 8)),
+        ],
       ),
     );
   }
