@@ -157,7 +157,9 @@ class _BentoCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: onTap,
-      child: Stack(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: Stack(
             fit: StackFit.expand,
             children: [
               // Background: cover image or solid color
@@ -220,6 +222,7 @@ class _BentoCard extends StatelessWidget {
               ),
             ],
           ),
+        ),
       );
   }
 }
