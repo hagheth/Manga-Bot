@@ -86,6 +86,8 @@ class _CardStackState extends State<_CardStack> with SingleTickerProviderStateMi
     _snapCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 200));
     _snapAnim = Tween<Offset>(begin: Offset.zero, end: Offset.zero).animate(_snapCtrl);
     _snapCtrl.addListener(() => setState(() => _drag = _snapAnim.value));
+    // Pre-fetch next batch immediately so it's ready before user swipes
+    WidgetsBinding.instance.addPostFrameCallback((_) => _refillInBackground());
   }
 
   // Silently fetch more and append to end of deck
