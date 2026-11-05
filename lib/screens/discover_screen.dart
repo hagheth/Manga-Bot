@@ -91,14 +91,18 @@ class _CardStackState extends State<_CardStack> with SingleTickerProviderStateMi
 
   Future<void> _fetchMore() async {
     if (_loadingMore) return;
+    if (!mounted) return;
     setState(() => _loadingMore = true);
     try {
       final fresh = await _api.getRecommendations();
-      setState(() => _deck = fresh);
+      if (!mounted) return;
+      if (fresh.isNotEmpty) {
+        setState(() { _deck = fresh; _swipeCount = 0; });
+      }
     } catch (_) {
       // keep existing deck on error
     } finally {
-      setState(() { _loadingMore = false; _swipeCount = 0; });
+      if (mounted) setState(() => _loadingMore = false);
     }
   }
 
@@ -120,6 +124,7 @@ class _CardStackState extends State<_CardStack> with SingleTickerProviderStateMi
   }
 
   void _onDragUpdate(DragUpdateDetails d) {
+    if (_loadingMore) return;
     setState(() {
       _isDragging = true;
       _drag += Offset(d.delta.dx, 0);
@@ -127,14 +132,15 @@ class _CardStackState extends State<_CardStack> with SingleTickerProviderStateMi
   }
 
   void _onDragEnd(DragEndDetails d) {
+    if (_loadingMore) return;
     final screenW = MediaQuery.of(context).size.width;
     if (_drag.dx.abs() > screenW * 0.35) {
-      // Fling off screen
       final target = Offset(_drag.dx > 0 ? screenW * 1.5 : -screenW * 1.5, 0);
       _snapAnim = Tween<Offset>(begin: _drag, end: target).animate(
         CurvedAnimation(parent: _snapCtrl, curve: Curves.easeOut),
       );
       _snapCtrl.forward(from: 0).then((_) {
+        if (!mounted) return;
         setState(() {
           final top = _deck.removeAt(0);
           _deck.add(top);
@@ -142,17 +148,16 @@ class _CardStackState extends State<_CardStack> with SingleTickerProviderStateMi
           _isDragging = false;
           _swipeCount++;
         });
-        // After swiping through all cards, fetch a fresh batch
-        if (_swipeCount >= widget.recs.length) {
+        if (_swipeCount >= _deck.length) {
           _fetchMore();
         }
       });
     } else {
-      // Snap back
       _snapAnim = Tween<Offset>(begin: _drag, end: Offset.zero).animate(
         CurvedAnimation(parent: _snapCtrl, curve: Curves.elasticOut),
       );
       _snapCtrl.forward(from: 0).then((_) {
+        if (!mounted) return;
         setState(() {
           _drag = Offset.zero;
           _isDragging = false;
