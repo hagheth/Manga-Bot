@@ -72,7 +72,7 @@ class ApiService {
 
   Future<List<Map<String, dynamic>>> getRecommendations() async {
     final res = await _dio.get('/manga/recommend');
-    return (res.data as List).cast<Map<String, dynamic>>();
+    return (res.data as List).map((e) => Map<String, dynamic>.from(e as Map)).toList();
   }
 
   // ── Chat ───────────────────────────────────────────────────────────────
