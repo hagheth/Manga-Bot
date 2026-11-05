@@ -242,22 +242,24 @@ def recommend_manga(manga_list: list) -> list:
     )
 
     raw = response.choices[0].message.content.strip()
-    if "```" in raw:
-        raw = raw.split("```")[1]
-        if raw.startswith("json"):
-            raw = raw[4:]
+    logger.info(f"Recommend raw response: {raw!r}")
+
+    import re
+    # Try extracting from code block first
+    code_match = re.search(r'```(?:json)?\s*(\[.*?\])\s*```', raw, re.DOTALL)
+    if code_match:
+        candidate = code_match.group(1)
     else:
-        import re
-        m = re.search(r'\[.*\]', raw, re.DOTALL)
-        if m:
-            raw = m.group(0)
+        # Find the outermost [ ... ] in the response
+        bracket_match = re.search(r'\[.*\]', raw, re.DOTALL)
+        candidate = bracket_match.group(0) if bracket_match else raw
 
     try:
-        results = json.loads(raw)
-        # Filter out any that match existing titles
-        return [r for r in results if r.get("title", "").lower() not in existing_titles]
+        results = json.loads(candidate)
+        filtered = [r for r in results if r.get("title", "").lower() not in existing_titles]
+        return filtered if filtered else results  # fall back to unfiltered if all removed
     except json.JSONDecodeError:
-        logger.warning(f"Failed to parse recommend response: {raw!r}")
+        logger.warning(f"Failed to parse recommend response: {candidate!r}")
         return []
 
 
