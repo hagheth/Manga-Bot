@@ -80,17 +80,22 @@ class _DiscoverGridState extends State<_DiscoverGrid> {
 
   Future<void> _fetchRemaining() async {
     for (int i = 1; i < 5; i++) {
-      // Collect all titles seen so far to pass as exclude
-      final seen = _rows
+      // Titles already shown — pass to backend AND use for hard dedup
+      final seenTitles = _rows
           .whereType<List<Map<String, dynamic>>>()
           .expand((r) => r)
-          .map((r) => '${r['title'] ?? ''}')
+          .map((r) => '${r['title'] ?? ''}'.toLowerCase())
           .where((t) => t.isNotEmpty)
-          .toList();
+          .toSet();
+
       try {
-        final data = await _api.getRecommendations(exclude: seen);
+        final data = await _api.getRecommendations(exclude: seenTitles.toList());
         if (!mounted) return;
-        setState(() => _rows[i] = data);
+        // Hard dedup — remove any title the AI returned anyway
+        final unique = data
+            .where((r) => !seenTitles.contains('${r['title'] ?? ''}'.toLowerCase()))
+            .toList();
+        setState(() => _rows[i] = unique);
       } catch (_) {
         if (!mounted) return;
         setState(() => _rows[i] = []);
