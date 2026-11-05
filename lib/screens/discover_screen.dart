@@ -75,7 +75,7 @@ class _CardStackState extends State<_CardStack> with SingleTickerProviderStateMi
   late List<Map<String, dynamic>> _deck;
   Offset _drag = Offset.zero;
   bool _isDragging = false;
-  bool _fetching = false;
+  int _activeFetches = 0;
   int _swiped = 0;
   late AnimationController _snapCtrl;
   late Animation<Offset> _snapAnim;
@@ -93,9 +93,9 @@ class _CardStackState extends State<_CardStack> with SingleTickerProviderStateMi
 
   // Silently fetch more and append to end of deck
   Future<void> _refillInBackground() async {
-    if (_fetching) return;
+    if (_activeFetches >= 2) return; // allow up to 2 concurrent fetches
     if (!mounted) return;
-    _fetching = true;
+    _activeFetches++;
     try {
       final fresh = await _api.getRecommendations();
       if (!mounted) return;
@@ -105,7 +105,7 @@ class _CardStackState extends State<_CardStack> with SingleTickerProviderStateMi
     } catch (_) {
       // ignore — deck still has cards
     } finally {
-      _fetching = false;
+      _activeFetches--;
     }
   }
 
