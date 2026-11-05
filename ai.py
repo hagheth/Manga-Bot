@@ -235,13 +235,14 @@ def recommend_manga(manga_list: list) -> list:
     )
 
     response = client.chat.completions.create(
-        model="llama3-70b-8192",
+        model="openai/gpt-oss-120b",
         messages=[
             {"role": "system", "content": "You are a manga recommendation expert. Always respond with valid JSON only, no extra text."},
             {"role": "user", "content": prompt},
         ],
         max_tokens=600,
         temperature=0.7,
+        tool_choice="none",
     )
 
     raw = response.choices[0].message.content.strip()
