@@ -281,8 +281,6 @@ class _TopCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cover = rec['cover_url'] as String?;
-    final likeOpacity = (dragDx / 100).clamp(0.0, 1.0);
-    final passOpacity = (-dragDx / 100).clamp(0.0, 1.0);
 
     return Container(
       width: width,
@@ -302,32 +300,6 @@ class _TopCard extends StatelessWidget {
                 ? Image.network(cover, fit: BoxFit.cover,
                     errorBuilder: (_, __, ___) => _placeholder())
                 : _placeholder(),
-            if (likeOpacity > 0)
-              Positioned(top: 16, left: 16,
-                child: Opacity(opacity: likeOpacity,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                        border: Border.all(color: Colors.green, width: 2.5),
-                        borderRadius: BorderRadius.circular(8),
-                        color: Colors.white.withOpacity(0.15)),
-                    child: const Text('ADD', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 16)),
-                  ),
-                ),
-              ),
-            if (passOpacity > 0)
-              Positioned(top: 16, right: 16,
-                child: Opacity(opacity: passOpacity,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                        border: Border.all(color: Colors.red, width: 2.5),
-                        borderRadius: BorderRadius.circular(8),
-                        color: Colors.white.withOpacity(0.15)),
-                    child: const Text('SKIP', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 16)),
-                  ),
-                ),
-              ),
           ],
         ),
       ),
