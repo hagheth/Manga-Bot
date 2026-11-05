@@ -118,15 +118,35 @@ def get_stats():
     }
 
 
+import time as _time
+
+_rec_cache: list = []
+_rec_cache_time: float = 0.0
+_REC_TTL = 3600  # 1 hour cache
+
 @app.get("/manga/recommend")
-def get_recommendations(exclude: str = ""):
-    """Return AI-generated manga recommendations based on the user's list."""
-    manga_list = list_manga(USER_ID)
+def get_recommendations(exclude: str = "", refresh: bool = False):
+    """Return AI-generated manga recommendations, cached for 1 hour."""
+    global _rec_cache, _rec_cache_time
+
     exclude_list = [t.strip().lower() for t in exclude.split(",") if t.strip()]
+    now = _time.time()
+
+    # Return cache if still valid and no exclude filter and not forced refresh
+    if not refresh and not exclude_list and _rec_cache and (now - _rec_cache_time) < _REC_TTL:
+        return _rec_cache
+
+    manga_list = list_manga(USER_ID)
     recs = recommend_manga(manga_list, exclude_titles=exclude_list)
     for r in recs:
         if r.get("cover_url"):
             r["cover_url"] = f"{RENDER_BASE}/proxy/image?url={quote(r['cover_url'], safe='')}"
+
+    # Only cache the base (no-exclude) response
+    if not exclude_list:
+        _rec_cache = recs
+        _rec_cache_time = now
+
     return recs
 
 
