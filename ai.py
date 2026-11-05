@@ -209,6 +209,58 @@ def chat_manga(user_message: str, manga_list: list = None) -> tuple[str, str]:
     return text, emotion
 
 
+def recommend_manga(manga_list: list) -> list:
+    """Return 5 structured recommendations not already in the user's list."""
+    existing_titles = [m["title"].lower() for m in manga_list]
+
+    lines = []
+    for m in manga_list:
+        line = f"- {m['title']} (status: {m['status']}"
+        if m.get("rating"):
+            line += f", rating: {m['rating']}/10"
+        line += ")"
+        lines.append(line)
+    list_text = "\n".join(lines) if lines else "No manga yet."
+
+    prompt = (
+        "You are a manga recommendation expert. Based on this person's reading history:\n\n"
+        + list_text
+        + "\n\nRecommend exactly 5 NEW manga they would enjoy that are NOT already in their list. "
+        "Return ONLY a JSON array, no extra text. Format:\n"
+        '[{"title": "...", "genre": "...", "reason": "..."}]\n'
+        "- title: exact manga title\n"
+        "- genre: 1-3 comma-separated genres (e.g. Action, Fantasy)\n"
+        "- reason: one sentence why they would enjoy it based on their taste\n"
+        "Return only the JSON array."
+    )
+
+    response = client.chat.completions.create(
+        model="openai/gpt-oss-20b",
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=600,
+        temperature=0.7,
+    )
+
+    raw = response.choices[0].message.content.strip()
+    if "```" in raw:
+        raw = raw.split("```")[1]
+        if raw.startswith("json"):
+            raw = raw[4:]
+    else:
+        import re
+        m = re.search(r'\[.*\]', raw, re.DOTALL)
+        if m:
+            raw = m.group(0)
+
+    try:
+        results = json.loads(raw)
+        # Filter out any that match existing titles
+        return [r for r in results if r.get("title", "").lower() not in existing_titles]
+    except json.JSONDecodeError:
+        logger.warning(f"Failed to parse recommend response: {raw!r}")
+        return []
+
+
 def suggest_manga(manga_list: list, suggest_new: bool = False) -> str:
     """Ask AI to recommend what to read next or suggest new manga."""
     if not manga_list and not suggest_new:

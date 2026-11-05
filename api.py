@@ -14,7 +14,7 @@ from manga_db import (
     update_url, update_title, update_rating, delete_manga_by_keyword,
     update_cover_url,
 )
-from ai import parse_message, chat_manga
+from ai import parse_message, chat_manga, recommend_manga
 from fetcher import fetch_manga_info, fetch_mangafire_url, fetch_manga_title
 
 load_dotenv()
@@ -116,6 +116,13 @@ def get_stats():
         "avg_rating": avg_rating,
         "activity": activity,
     }
+
+
+@app.get("/manga/recommend")
+def get_recommendations():
+    """Return 5 AI-generated manga recommendations based on the user's list."""
+    manga_list = list_manga(USER_ID)
+    return recommend_manga(manga_list)
 
 
 @app.get("/manga/search")
