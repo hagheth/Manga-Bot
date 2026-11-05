@@ -235,7 +235,7 @@ def recommend_manga(manga_list: list) -> list:
     )
 
     response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model="llama3-70b-8192",
         messages=[
             {"role": "system", "content": "You are a manga recommendation expert. Always respond with valid JSON only, no extra text."},
             {"role": "user", "content": prompt},
