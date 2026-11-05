@@ -86,9 +86,9 @@ class _RecommendCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final title = rec['title'] ?? '';
-    final genre = rec['genre'] ?? '';
-    final reason = rec['reason'] ?? '';
+    final title = '${rec['title'] ?? ''}';
+    final genre = '${rec['genre'] ?? ''}';
+    final reason = '${rec['reason'] ?? ''}';
 
     return GestureDetector(
       onTap: onTap,
@@ -177,9 +177,9 @@ class _DetailSheetState extends State<_DetailSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final title = widget.rec['title'] ?? '';
-    final genre = widget.rec['genre'] ?? '';
-    final reason = widget.rec['reason'] ?? '';
+    final title = '${widget.rec['title'] ?? ''}';
+    final genre = '${widget.rec['genre'] ?? ''}';
+    final reason = '${widget.rec['reason'] ?? ''}';
 
     return Padding(
       padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(context).viewInsets.bottom + 32),
