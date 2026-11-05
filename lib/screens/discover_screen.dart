@@ -248,8 +248,7 @@ class _BentoCard extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
+      );
   }
 }
 
