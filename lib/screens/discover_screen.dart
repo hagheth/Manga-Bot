@@ -146,8 +146,8 @@ class _CardStackState extends State<_CardStack> with SingleTickerProviderStateMi
           _drag = Offset.zero;
           _isDragging = false;
         });
-        // Silently refill when running low
-        if (_deck.length <= 5) {
+        // Silently refill when running low (trigger early for buffer)
+        if (_deck.length <= 7) {
           _refillInBackground();
         }
       });
