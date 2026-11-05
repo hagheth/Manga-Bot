@@ -75,8 +75,7 @@ class _CardStackState extends State<_CardStack> with SingleTickerProviderStateMi
   late List<Map<String, dynamic>> _deck;
   Offset _drag = Offset.zero;
   bool _isDragging = false;
-  bool _loadingMore = false;
-  int _swipeCount = 0;
+  bool _fetching = false;
   late AnimationController _snapCtrl;
   late Animation<Offset> _snapAnim;
 
@@ -89,20 +88,21 @@ class _CardStackState extends State<_CardStack> with SingleTickerProviderStateMi
     _snapCtrl.addListener(() => setState(() => _drag = _snapAnim.value));
   }
 
-  Future<void> _fetchMore() async {
-    if (_loadingMore) return;
+  // Silently fetch more and append to end of deck
+  Future<void> _refillInBackground() async {
+    if (_fetching) return;
     if (!mounted) return;
-    setState(() => _loadingMore = true);
+    _fetching = true;
     try {
       final fresh = await _api.getRecommendations();
       if (!mounted) return;
       if (fresh.isNotEmpty) {
-        setState(() { _deck = fresh; _swipeCount = 0; });
+        setState(() => _deck.addAll(fresh));
       }
     } catch (_) {
-      // keep existing deck on error
+      // ignore — deck still has cards
     } finally {
-      if (mounted) setState(() => _loadingMore = false);
+      _fetching = false;
     }
   }
 
@@ -124,7 +124,7 @@ class _CardStackState extends State<_CardStack> with SingleTickerProviderStateMi
   }
 
   void _onDragUpdate(DragUpdateDetails d) {
-    if (_loadingMore) return;
+    if (_deck.isEmpty) return;
     setState(() {
       _isDragging = true;
       _drag += Offset(d.delta.dx, 0);
@@ -132,7 +132,7 @@ class _CardStackState extends State<_CardStack> with SingleTickerProviderStateMi
   }
 
   void _onDragEnd(DragEndDetails d) {
-    if (_loadingMore) return;
+    if (_deck.isEmpty) return;
     final screenW = MediaQuery.of(context).size.width;
     if (_drag.dx.abs() > screenW * 0.35) {
       final target = Offset(_drag.dx > 0 ? screenW * 1.5 : -screenW * 1.5, 0);
@@ -142,14 +142,13 @@ class _CardStackState extends State<_CardStack> with SingleTickerProviderStateMi
       _snapCtrl.forward(from: 0).then((_) {
         if (!mounted) return;
         setState(() {
-          final top = _deck.removeAt(0);
-          _deck.add(top);
+          _deck.removeAt(0); // discard swiped card
           _drag = Offset.zero;
           _isDragging = false;
-          _swipeCount++;
         });
-        if (_swipeCount >= _deck.length) {
-          _fetchMore();
+        // Silently refill when running low
+        if (_deck.length <= 5) {
+          _refillInBackground();
         }
       });
     } else {
@@ -177,7 +176,7 @@ class _CardStackState extends State<_CardStack> with SingleTickerProviderStateMi
         const SizedBox(height: 8),
         // Hint text
         Text(
-          'Swipe to explore • ${_deck.length} picks for you',
+          'Swipe to explore',
           style: TextStyle(fontSize: 12, color: Colors.grey[500]),
         ),
         const SizedBox(height: 16),
@@ -206,18 +205,6 @@ class _CardStackState extends State<_CardStack> with SingleTickerProviderStateMi
           ),
         ),
         const SizedBox(height: 20),
-        if (_loadingMore)
-          const Padding(
-            padding: EdgeInsets.only(top: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)),
-                SizedBox(width: 8),
-                Text('Finding new picks…', style: TextStyle(fontSize: 12, color: Colors.grey)),
-              ],
-            ),
-          ),
         // Info below card
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 32),
