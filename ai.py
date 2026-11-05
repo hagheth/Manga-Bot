@@ -240,7 +240,7 @@ def recommend_manga(manga_list: list) -> list:
             {"role": "system", "content": "You are a manga recommendation expert. Always respond with valid JSON only, no extra text."},
             {"role": "user", "content": prompt},
         ],
-        max_tokens=600,
+        max_tokens=1000,
         temperature=0.7,
         tool_choice="none",
     )

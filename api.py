@@ -125,36 +125,6 @@ def get_recommendations():
     return recommend_manga(manga_list)
 
 
-@app.get("/manga/recommend/debug")
-def get_recommendations_debug():
-    """Debug: return raw AI response for recommendations."""
-    import json as _json
-    from ai import client
-    manga_list = list_manga(USER_ID)
-    lines = [f"- {m['title']} (status: {m['status']})" for m in manga_list]
-    list_text = "\n".join(lines) if lines else "No manga yet."
-    prompt = (
-        "You are a manga recommendation expert. Based on this person's reading history:\n\n"
-        + list_text
-        + "\n\nRecommend exactly 5 NEW manga they would enjoy that are NOT already in their list. "
-        "Return ONLY a JSON array, no extra text. Format:\n"
-        '[{"title": "...", "genre": "...", "reason": "..."}]\n'
-        "Return only the JSON array."
-    )
-    response = client.chat.completions.create(
-        model="openai/gpt-oss-120b",
-        messages=[
-            {"role": "system", "content": "You are a manga recommendation expert. Always respond with valid JSON only."},
-            {"role": "user", "content": prompt},
-        ],
-        max_tokens=600,
-        temperature=0.7,
-        tool_choice="none",
-    )
-    raw = response.choices[0].message.content.strip()
-    return {"raw": raw, "manga_count": len(manga_list)}
-
-
 @app.get("/manga/search")
 def search(q: str):
     """Search manga by keyword."""
