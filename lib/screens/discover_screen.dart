@@ -133,8 +133,8 @@ class _CardStackState extends State<_CardStack> with SingleTickerProviderStateMi
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    final cardW = size.width - 48;
-    final cardH = size.height * 0.68;
+    final cardW = size.width - 40;
+    final cardH = size.height * 0.60;
 
     return Column(
       children: [
@@ -250,26 +250,26 @@ class _TopCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(28),
         child: Stack(
           children: [
-            // Cover image — top 55%
+            // Cover image — top 48%
             Positioned.fill(
               child: Column(
                 children: [
                   Expanded(
-                    flex: 55,
+                    flex: 48,
                     child: cover != null
                         ? Image.network(cover, fit: BoxFit.cover, width: double.infinity,
                             errorBuilder: (_, __, ___) => _coverPlaceholder())
                         : _coverPlaceholder(),
                   ),
-                  Expanded(flex: 45, child: const SizedBox()),
+                  Expanded(flex: 52, child: const SizedBox()),
                 ],
               ),
             ),
-            // Info panel — bottom 45%
+            // Info panel — bottom 52%
             Positioned(
               left: 0, right: 0, bottom: 0,
               child: Container(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
                 decoration: const BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.vertical(top: Radius.zero),
@@ -278,10 +278,10 @@ class _TopCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(title,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
                     Row(
                       children: [
                         if (status.isNotEmpty)
@@ -292,20 +292,20 @@ class _TopCard extends StatelessWidget {
                               style: TextStyle(fontSize: 12, color: Colors.grey[500])),
                       ],
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 8),
                     Wrap(
                       spacing: 6, runSpacing: 4,
                       children: genre.split(',').map((g) => g.trim()).where((g) => g.isNotEmpty)
                           .map((g) => _GenreChip(label: g)).toList(),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 8),
                     Text(reason,
-                        style: TextStyle(fontSize: 13, color: Colors.grey[600], height: 1.4),
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600], height: 1.4),
                         maxLines: 2, overflow: TextOverflow.ellipsis),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 10),
                     SizedBox(
                       width: double.infinity,
-                      height: 44,
+                      height: 42,
                       child: ElevatedButton(
                         onPressed: () => _showDetail(context, rec),
                         style: ElevatedButton.styleFrom(
@@ -378,7 +378,8 @@ class _StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isOngoing ? Colors.green : isCompleted ? Colors.blue : Colors.grey;
+    final isHiatus = status.toLowerCase() == 'hiatus';
+    final color = isOngoing ? Colors.green : isCompleted ? Colors.blue : isHiatus ? Colors.orange : Colors.grey;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
