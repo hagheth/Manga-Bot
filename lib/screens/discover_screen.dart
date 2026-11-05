@@ -88,43 +88,18 @@ class _RecommendGrid extends StatefulWidget {
 
 class _RecommendGridState extends State<_RecommendGrid> {
   late List<Map<String, dynamic>> _items;
-  int _activeFetches = 0;
   final _scrollCtrl = ScrollController();
 
   @override
   void initState() {
     super.initState();
     _items = List.from(widget.initialRecs);
-    // Pre-fetch next batch immediately
-    WidgetsBinding.instance.addPostFrameCallback((_) => _fetchMore());
-    _scrollCtrl.addListener(_onScroll);
   }
 
   @override
   void dispose() {
     _scrollCtrl.dispose();
     super.dispose();
-  }
-
-  void _onScroll() {
-    if (_scrollCtrl.position.pixels >=
-        _scrollCtrl.position.maxScrollExtent - 400) {
-      _fetchMore();
-    }
-  }
-
-  Future<void> _fetchMore() async {
-    if (_activeFetches >= 2) return;
-    if (!mounted) return;
-    _activeFetches++;
-    try {
-      final fresh = await _api.getRecommendations();
-      if (!mounted) return;
-      if (fresh.isNotEmpty) setState(() => _items.addAll(fresh));
-    } catch (_) {
-    } finally {
-      _activeFetches--;
-    }
   }
 
   void _showDetail(Map<String, dynamic> rec) {
@@ -149,7 +124,7 @@ class _RecommendGridState extends State<_RecommendGrid> {
         mainAxisSpacing: 8,
         childAspectRatio: 0.72,
       ),
-      itemCount: _items.length,
+      itemCount: _items.length.clamp(0, 10),
       itemBuilder: (context, i) => _BentoCard(
         rec: _items[i],
         colorIndex: i % _palette.length,
