@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/api_service.dart';
@@ -8,6 +7,24 @@ final _api = ApiService();
 final recommendProvider = FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
   return _api.getRecommendations();
 });
+
+// Vibrant fallback palette when no cover image
+const _palette = [
+  Color(0xFF4ECDC4),
+  Color(0xFF7B68EE),
+  Color(0xFFFF6B6B),
+  Color(0xFF95E1D3),
+  Color(0xFFF38181),
+  Color(0xFFAA96DA),
+  Color(0xFFFCBF49),
+  Color(0xFF2D6A4F),
+  Color(0xFFE84393),
+  Color(0xFF3A86FF),
+];
+
+// Alternating heights for masonry feel
+const _leftHeights  = [200.0, 160.0, 220.0, 150.0, 190.0];
+const _rightHeights = [160.0, 210.0, 150.0, 200.0, 170.0];
 
 class DiscoverScreen extends ConsumerWidget {
   final ValueNotifier<int>? tapNotifier;
@@ -54,68 +71,65 @@ class DiscoverScreen extends ConsumerWidget {
             return const Center(
                 child: Text('No recommendations yet. Add more manga to your library!'));
           }
-          return _CardStack(recs: recs);
+          return _RecommendGrid(initialRecs: recs);
         },
       ),
     );
   }
 }
 
-// ── Card Stack ────────────────────────────────────────────────────────────────
+// ── Scrollable bento grid ─────────────────────────────────────────────────────
 
-class _CardStack extends StatefulWidget {
-  final List<Map<String, dynamic>> recs;
-  const _CardStack({required this.recs});
+class _RecommendGrid extends StatefulWidget {
+  final List<Map<String, dynamic>> initialRecs;
+  const _RecommendGrid({required this.initialRecs});
 
   @override
-  State<_CardStack> createState() => _CardStackState();
+  State<_RecommendGrid> createState() => _RecommendGridState();
 }
 
-class _CardStackState extends State<_CardStack> with SingleTickerProviderStateMixin {
-  late List<Map<String, dynamic>> _deck;
-  Offset _drag = Offset.zero;
-  bool _isDragging = false;
+class _RecommendGridState extends State<_RecommendGrid> {
+  late List<Map<String, dynamic>> _items;
   int _activeFetches = 0;
-  int _swiped = 0;
-  late AnimationController _snapCtrl;
-  late Animation<Offset> _snapAnim;
+  final _scrollCtrl = ScrollController();
 
   @override
   void initState() {
     super.initState();
-    _deck = List.from(widget.recs);
-    _snapCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 200));
-    _snapAnim = Tween<Offset>(begin: Offset.zero, end: Offset.zero).animate(_snapCtrl);
-    _snapCtrl.addListener(() => setState(() => _drag = _snapAnim.value));
-    // Pre-fetch next batch immediately so it's ready before user swipes
-    WidgetsBinding.instance.addPostFrameCallback((_) => _refillInBackground());
+    _items = List.from(widget.initialRecs);
+    // Pre-fetch next batch immediately
+    WidgetsBinding.instance.addPostFrameCallback((_) => _fetchMore());
+    _scrollCtrl.addListener(_onScroll);
   }
 
-  // Silently fetch more and append to end of deck
-  Future<void> _refillInBackground() async {
-    if (_activeFetches >= 2) return; // allow up to 2 concurrent fetches
+  @override
+  void dispose() {
+    _scrollCtrl.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollCtrl.position.pixels >=
+        _scrollCtrl.position.maxScrollExtent - 400) {
+      _fetchMore();
+    }
+  }
+
+  Future<void> _fetchMore() async {
+    if (_activeFetches >= 2) return;
     if (!mounted) return;
     _activeFetches++;
     try {
       final fresh = await _api.getRecommendations();
       if (!mounted) return;
-      if (fresh.isNotEmpty) {
-        setState(() => _deck.addAll(fresh));
-      }
+      if (fresh.isNotEmpty) setState(() => _items.addAll(fresh));
     } catch (_) {
-      // ignore — deck still has cards
     } finally {
       _activeFetches--;
     }
   }
 
-  @override
-  void dispose() {
-    _snapCtrl.dispose();
-    super.dispose();
-  }
-
-  void _showDetail(BuildContext context, Map<String, dynamic> rec) {
+  void _showDetail(Map<String, dynamic> rec) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -126,254 +140,190 @@ class _CardStackState extends State<_CardStack> with SingleTickerProviderStateMi
     );
   }
 
-  void _onDragUpdate(DragUpdateDetails d) {
-    if (_deck.isEmpty) return;
-    setState(() {
-      _isDragging = true;
-      _drag += Offset(d.delta.dx, 0);
-    });
-  }
-
-  void _onDragEnd(DragEndDetails d) {
-    if (_deck.isEmpty) return;
-    final screenW = MediaQuery.of(context).size.width;
-    if (_drag.dx.abs() > screenW * 0.35) {
-      final target = Offset(_drag.dx > 0 ? screenW * 1.5 : -screenW * 1.5, 0);
-      _snapAnim = Tween<Offset>(begin: _drag, end: target).animate(
-        CurvedAnimation(parent: _snapCtrl, curve: Curves.easeOut),
-      );
-      _snapCtrl.forward(from: 0).then((_) {
-        if (!mounted) return;
-        setState(() {
-          _deck.removeAt(0);
-          _drag = Offset.zero;
-          _isDragging = false;
-          _swiped++;
-        });
-        // Fetch next 10 after every 10 swipes
-        if (_swiped % 10 == 0) {
-          _refillInBackground();
-        }
-      });
-    } else {
-      _snapAnim = Tween<Offset>(begin: _drag, end: Offset.zero).animate(
-        CurvedAnimation(parent: _snapCtrl, curve: Curves.elasticOut),
-      );
-      _snapCtrl.forward(from: 0).then((_) {
-        if (!mounted) return;
-        setState(() {
-          _drag = Offset.zero;
-          _isDragging = false;
-        });
-      });
+  @override
+  Widget build(BuildContext context) {
+    // Split into left and right columns
+    final left  = <Map<String, dynamic>>[];
+    final right = <Map<String, dynamic>>[];
+    for (int i = 0; i < _items.length; i++) {
+      (i.isEven ? left : right).add(_items[i]);
     }
+
+    return SingleChildScrollView(
+      controller: _scrollCtrl,
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 100),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              children: [
+                for (int i = 0; i < left.length; i++)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: _BentoCard(
+                      rec: left[i],
+                      height: _leftHeights[i % _leftHeights.length],
+                      colorIndex: (i * 2) % _palette.length,
+                      onTap: () => _showDetail(left[i]),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              children: [
+                const SizedBox(height: 28), // offset right column for stagger
+                for (int i = 0; i < right.length; i++)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: _BentoCard(
+                      rec: right[i],
+                      height: _rightHeights[i % _rightHeights.length],
+                      colorIndex: (i * 2 + 1) % _palette.length,
+                      onTap: () => _showDetail(right[i]),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
+}
+
+// ── Bento card ────────────────────────────────────────────────────────────────
+
+class _BentoCard extends StatelessWidget {
+  final Map<String, dynamic> rec;
+  final double height;
+  final int colorIndex;
+  final VoidCallback onTap;
+
+  const _BentoCard({
+    required this.rec,
+    required this.height,
+    required this.colorIndex,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final cardW = size.width * 0.65;
-    final cardH = cardW * 1.45;
+    final cover  = rec['cover_url'] as String?;
+    final title  = '${rec['title'] ?? ''}';
+    final genre  = '${rec['genre'] ?? ''}'.split(',').first.trim();
+    final status = '${rec['manga_status'] ?? ''}';
+    final bgColor = _palette[colorIndex];
 
-    final sideOffset = cardW * 0.74;
-
-    return Column(
-      children: [
-        const SizedBox(height: 8),
-        Text('Swipe to explore',
-            style: TextStyle(fontSize: 12, color: Colors.grey[500])),
-        const SizedBox(height: 16),
-        // Card stack — horizontal fan
-        SizedBox(
-          height: cardH,
-          width: double.infinity,
-          child: _deck.isEmpty
-              ? const SizedBox.shrink()
-              : Stack(
-            alignment: Alignment.center,
-            clipBehavior: Clip.none,
+    return GestureDetector(
+      onTap: onTap,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: SizedBox(
+          height: height,
+          child: Stack(
+            fit: StackFit.expand,
             children: [
-              // Left peeking card
-              if (_deck.length > 2)
-                Transform.translate(
-                  offset: Offset(-sideOffset, 0),
-                  child: Transform.scale(
-                    scale: 0.88,
-                    child: _BackCard(width: cardW, height: cardH),
-                  ),
-                ),
-              // Right peeking card
-              if (_deck.length > 1)
-                Transform.translate(
-                  offset: Offset(sideOffset, 0),
-                  child: Transform.scale(
-                    scale: 0.88,
-                    child: _BackCard(width: cardW, height: cardH),
-                  ),
-                ),
-              // Top draggable card
-              GestureDetector(
-                onHorizontalDragUpdate: _onDragUpdate,
-                onHorizontalDragEnd: _onDragEnd,
-                onTap: () => _showDetail(context, _deck[0]),
-                child: Transform.translate(
-                  offset: _drag,
-                  child: Transform.rotate(
-                    angle: (_drag.dx / size.width) * 0.25,
-                    child: _TopCard(rec: _deck[0], width: cardW, height: cardH, dragDx: _drag.dx),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        // Dot indicator
-        if (_deck.isNotEmpty)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(5, (i) {
-              final active = i == (_swiped % 5);
-              return AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                width: active ? 20 : 7,
-                height: 7,
-                margin: const EdgeInsets.symmetric(horizontal: 3),
+              // Background: cover image or solid color
+              if (cover != null)
+                Image.network(cover, fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(color: bgColor))
+              else
+                Container(color: bgColor),
+
+              // Gradient overlay for text legibility
+              DecoratedBox(
                 decoration: BoxDecoration(
-                  color: active ? const Color(0xFF1A1A1A) : Colors.grey[300],
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              );
-            }),
-          ),
-        const SizedBox(height: 20),
-        // Info below card
-        if (_deck.isEmpty)
-          const Expanded(child: Center(child: CircularProgressIndicator()))
-        else
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32),
-          child: Column(
-            children: [
-              Text('${_deck[0]['title'] ?? ''}',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                  textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis),
-              const SizedBox(height: 6),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if ((_deck[0]['manga_status'] ?? '').toString().isNotEmpty)
-                    _StatusBadge(
-                      status: '${_deck[0]['manga_status']}',
-                      isOngoing: '${_deck[0]['manga_status']}'.toLowerCase() == 'ongoing',
-                      isCompleted: '${_deck[0]['manga_status']}'.toLowerCase() == 'completed',
-                    ),
-                  if (_deck[0]['total_chapters'] != null) ...[
-                    const SizedBox(width: 8),
-                    Text('${_deck[0]['total_chapters']} ch',
-                        style: TextStyle(fontSize: 12, color: Colors.grey[500])),
-                  ],
-                ],
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                alignment: WrapAlignment.center,
-                spacing: 6, runSpacing: 4,
-                children: '${_deck[0]['genre'] ?? ''}'.split(',')
-                    .map((g) => g.trim()).where((g) => g.isNotEmpty)
-                    .map((g) => _GenreChip(label: g)).toList(),
-              ),
-              const SizedBox(height: 10),
-              Text('${_deck[0]['reason'] ?? ''}',
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600], height: 1.4),
-                  textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis),
-              const SizedBox(height: 14),
-              SizedBox(
-                width: double.infinity,
-                height: 44,
-                child: ElevatedButton(
-                  onPressed: () => _showDetail(context, _deck[0]),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1A1A1A),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withOpacity(0.65),
+                    ],
+                    stops: const [0.4, 1.0],
                   ),
-                  child: const Text('View Details', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ),
+
+              // Text content
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Genre chip at top
+                    if (genre.isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.25),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(genre,
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600)),
+                      ),
+                    const Spacer(),
+                    // Status dot
+                    if (status.isNotEmpty) _StatusDot(status: status),
+                    const SizedBox(height: 4),
+                    // Title
+                    Text(title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            height: 1.2)),
+                  ],
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 100),
+      ),
+    );
+  }
+}
+
+// ── Status dot ────────────────────────────────────────────────────────────────
+
+class _StatusDot extends StatelessWidget {
+  final String status;
+  const _StatusDot({required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    final s = status.toLowerCase();
+    final color = s == 'ongoing'
+        ? Colors.greenAccent
+        : s == 'completed'
+            ? Colors.lightBlueAccent
+            : s == 'hiatus'
+                ? Colors.orangeAccent
+                : Colors.white54;
+    return Row(
+      children: [
+        Container(
+          width: 6, height: 6,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 4),
+        Text(status,
+            style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w600)),
       ],
     );
   }
 }
 
-// ── Back card (behind stack) ──────────────────────────────────────────────────
-
-class _BackCard extends StatelessWidget {
-  final double width, height;
-  const _BackCard({required this.width, required this.height});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: width,
-      height: height,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 20, offset: const Offset(0, 8)),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Top card ─────────────────────────────────────────────────────────────────
-
-class _TopCard extends StatelessWidget {
-  final Map<String, dynamic> rec;
-  final double width, height, dragDx;
-  const _TopCard({required this.rec, required this.width, required this.height, required this.dragDx});
-
-  @override
-  Widget build(BuildContext context) {
-    final cover = rec['cover_url'] as String?;
-
-    return Container(
-      width: width,
-      height: height,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.18), blurRadius: 24, offset: const Offset(0, 10)),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            cover != null
-                ? Image.network(cover, fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _placeholder())
-                : _placeholder(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _placeholder() => Container(
-    color: const Color(0xFFDDDDDD),
-    child: const Center(child: Icon(Icons.menu_book_rounded, color: Colors.grey, size: 48)),
-  );
-}
-
-// ── Status badge ──────────────────────────────────────────────────────────────
+// ── Status badge (kept for detail sheet) ─────────────────────────────────────
 
 class _StatusBadge extends StatelessWidget {
   final String status;
@@ -442,12 +392,12 @@ class _DetailSheetState extends State<_DetailSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final title   = '${widget.rec['title'] ?? ''}';
-    final genre   = '${widget.rec['genre'] ?? ''}';
-    final reason  = '${widget.rec['reason'] ?? ''}';
-    final status  = '${widget.rec['manga_status'] ?? ''}';
+    final title    = '${widget.rec['title'] ?? ''}';
+    final genre    = '${widget.rec['genre'] ?? ''}';
+    final reason   = '${widget.rec['reason'] ?? ''}';
+    final status   = '${widget.rec['manga_status'] ?? ''}';
     final chapters = widget.rec['total_chapters'];
-    final cover   = widget.rec['cover_url'] as String?;
+    final cover    = widget.rec['cover_url'] as String?;
     final isOngoing   = status.toLowerCase() == 'ongoing';
     final isCompleted = status.toLowerCase() == 'completed';
 
