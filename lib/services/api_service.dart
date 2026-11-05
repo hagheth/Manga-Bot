@@ -68,6 +68,13 @@ class ApiService {
     }
   }
 
+  // ── Discover ───────────────────────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> getRecommendations() async {
+    final res = await _dio.get('/manga/recommend');
+    return (res.data as List).cast<Map<String, dynamic>>();
+  }
+
   // ── Chat ───────────────────────────────────────────────────────────────
 
   Future<Map<String, dynamic>> chat(String message) async {

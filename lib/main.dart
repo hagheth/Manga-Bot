@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'screens/library_screen.dart';
 import 'screens/chat_screen.dart';
 import 'screens/stats_screen.dart';
+import 'screens/discover_screen.dart';
 
 void main() {
   runApp(const ProviderScope(child: MangaApp()));
@@ -67,12 +68,13 @@ class MainShell extends StatefulWidget {
 
 class _MainShellState extends State<MainShell> {
   int _index = 0;
-  final _tapNotifiers = [ValueNotifier(0), ValueNotifier(0), ValueNotifier(0)];
+  final _tapNotifiers = [ValueNotifier(0), ValueNotifier(0), ValueNotifier(0), ValueNotifier(0)];
 
   late final List<Widget> _screens = [
     LibraryScreen(tapNotifier: _tapNotifiers[0]),
     const ChatScreen(),
     StatsScreen(tapNotifier: _tapNotifiers[2]),
+    DiscoverScreen(tapNotifier: _tapNotifiers[3]),
   ];
 
   @override
@@ -85,6 +87,7 @@ class _MainShellState extends State<MainShell> {
     Icons.menu_book_rounded,
     Icons.chat_bubble_outline_rounded,
     Icons.bar_chart_rounded,
+    Icons.explore_rounded,
   ];
 
   @override
