@@ -94,6 +94,7 @@ class _MainShellState extends State<MainShell> {
     final navBottom = (bottomPad > 0 ? bottomPad / 2 : 8.0);
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       body: Stack(
         children: [
           IndexedStack(index: _index, children: _screens),
