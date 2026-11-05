@@ -103,6 +103,7 @@ class _MainShellState extends State<MainShell> {
             left: 0,
             right: 0,
             bottom: navBottom,
+            height: navHeight,
             child: Center(
               child: Container(
                 height: navHeight,
