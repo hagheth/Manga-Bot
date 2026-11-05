@@ -140,7 +140,9 @@ class _RecommendCard extends StatelessWidget {
                           .map((g) => _GenreChip(label: g))
                           .toList(),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
+                    _MangaMeta(rec: rec),
+                    const SizedBox(height: 6),
                     Text(reason,
                         style: TextStyle(fontSize: 12, color: Colors.grey[700], height: 1.4),
                         maxLines: 3,
@@ -152,6 +154,51 @@ class _RecommendCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _MangaMeta extends StatelessWidget {
+  final Map<String, dynamic> rec;
+  const _MangaMeta({required this.rec});
+
+  @override
+  Widget build(BuildContext context) {
+    final status = '${rec['manga_status'] ?? ''}';
+    final chapters = rec['total_chapters'];
+    final isOngoing = status.toLowerCase() == 'ongoing';
+    final isCompleted = status.toLowerCase() == 'completed';
+
+    return Row(
+      children: [
+        if (status.isNotEmpty) ...[
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: isOngoing
+                  ? Colors.green.withOpacity(0.12)
+                  : isCompleted
+                      ? Colors.blue.withOpacity(0.12)
+                      : Colors.grey.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              status,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: isOngoing ? Colors.green[700] : isCompleted ? Colors.blue[700] : Colors.grey[700],
+              ),
+            ),
+          ),
+          const SizedBox(width: 6),
+        ],
+        if (chapters != null)
+          Text(
+            '$chapters ch',
+            style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+          ),
+      ],
     );
   }
 }
@@ -252,6 +299,8 @@ class _DetailSheetState extends State<_DetailSheet> {
                 .map((g) => _GenreChip(label: g))
                 .toList(),
           ),
+          const SizedBox(height: 12),
+          _MangaMeta(rec: widget.rec),
           const SizedBox(height: 16),
           Text(
             reason,
