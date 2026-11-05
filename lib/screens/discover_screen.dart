@@ -8,7 +8,6 @@ final recommendProvider = FutureProvider.autoDispose<List<Map<String, dynamic>>>
   return _api.getRecommendations();
 });
 
-// Vibrant fallback palette when no cover image
 const _palette = [
   Color(0xFF4ECDC4),
   Color(0xFF7B68EE),
@@ -22,6 +21,13 @@ const _palette = [
   Color(0xFF3A86FF),
 ];
 
+const _rowLabels = [
+  'Handpicked for You',
+  'Similar to Your Favorites',
+  'Top Rated Picks',
+  'Hidden Gems',
+  'New Discoveries',
+];
 
 class DiscoverScreen extends ConsumerWidget {
   final ValueNotifier<int>? tapNotifier;
@@ -68,38 +74,46 @@ class DiscoverScreen extends ConsumerWidget {
             return const Center(
                 child: Text('No recommendations yet. Add more manga to your library!'));
           }
-          return _RecommendGrid(initialRecs: recs);
+          return _RecommendRows(initialRecs: recs);
         },
-
       ),
     );
   }
 }
 
-// ── Scrollable bento grid ─────────────────────────────────────────────────────
+// ── 5 horizontal rows ─────────────────────────────────────────────────────────
 
-class _RecommendGrid extends StatefulWidget {
+class _RecommendRows extends StatefulWidget {
   final List<Map<String, dynamic>> initialRecs;
-  const _RecommendGrid({required this.initialRecs});
+  const _RecommendRows({required this.initialRecs});
 
   @override
-  State<_RecommendGrid> createState() => _RecommendGridState();
+  State<_RecommendRows> createState() => _RecommendRowsState();
 }
 
-class _RecommendGridState extends State<_RecommendGrid> {
-  late List<Map<String, dynamic>> _items;
-  final _scrollCtrl = ScrollController();
+class _RecommendRowsState extends State<_RecommendRows> {
+  // 5 rows; row 0 is pre-loaded
+  late List<List<Map<String, dynamic>>?> _rows;
 
   @override
   void initState() {
     super.initState();
-    _items = List.from(widget.initialRecs);
+    _rows = [widget.initialRecs, null, null, null, null];
+    // Fetch the other 4 rows in parallel
+    for (int i = 1; i < 5; i++) {
+      _fetchRow(i);
+    }
   }
 
-  @override
-  void dispose() {
-    _scrollCtrl.dispose();
-    super.dispose();
+  Future<void> _fetchRow(int index) async {
+    try {
+      final fresh = await _api.getRecommendations();
+      if (!mounted) return;
+      setState(() => _rows[index] = fresh);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _rows[index] = []); // mark as failed
+    }
   }
 
   void _showDetail(Map<String, dynamic> rec) {
@@ -115,200 +129,116 @@ class _RecommendGridState extends State<_RecommendGrid> {
 
   @override
   Widget build(BuildContext context) {
-    final cardW = 120.0;
-    final cardH = cardW * 1.45;
+    const cardW = 120.0;
+    const cardH = cardW * 1.45;
 
-    return SingleChildScrollView(
-      controller: _scrollCtrl,
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 100),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          for (int i = 0; i < _items.length.clamp(0, 10); i++)
+    return ListView.builder(
+      padding: const EdgeInsets.only(bottom: 100),
+      itemCount: 5,
+      itemBuilder: (context, rowIndex) {
+        final row = _rows[rowIndex];
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
             Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: GestureDetector(
-                onTap: () => _showDetail(_items[i]),
-                child: SizedBox(
-                  width: cardW,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: SizedBox(
-                          width: cardW,
-                          height: cardH,
-                          child: _items[i]['cover_url'] != null
-                              ? Image.network(
-                                  '${_items[i]['cover_url']}',
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) =>
-                                      Container(color: _palette[i % _palette.length]),
-                                )
-                              : Container(color: _palette[i % _palette.length]),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        '${_items[i]['title'] ?? ''}',
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, height: 1.3),
-                      ),
-                      if (('${_items[i]['genre'] ?? ''}').split(',').first.trim().isNotEmpty)
-                        Text(
-                          '${_items[i]['genre'] ?? ''}'.split(',').first.trim(),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontSize: 11, color: Colors.grey[500]),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 10),
+              child: Text(_rowLabels[rowIndex],
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 16)),
             ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Bento card ────────────────────────────────────────────────────────────────
-
-class _BentoCard extends StatelessWidget {
-  final Map<String, dynamic> rec;
-  final int colorIndex;
-  final VoidCallback onTap;
-
-  const _BentoCard({
-    required this.rec,
-    required this.colorIndex,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cover  = rec['cover_url'] as String?;
-    final title  = '${rec['title'] ?? ''}';
-    final genre  = '${rec['genre'] ?? ''}'.split(',').first.trim();
-    final status = '${rec['manga_status'] ?? ''}';
-    final bgColor = _palette[colorIndex];
-
-    return GestureDetector(
-      onTap: onTap,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(10),
-        child: Stack(
-            fit: StackFit.expand,
-            children: [
-              // Background: cover image or solid color
-              if (cover != null)
-                Image.network(cover, fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(color: bgColor))
-              else
-                Container(color: bgColor),
-
-              // Gradient overlay for text legibility
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.transparent,
-                      Colors.black.withOpacity(0.65),
-                    ],
-                    stops: const [0.4, 1.0],
-                  ),
-                ),
-              ),
-
-              // Text content
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Genre chip at top
-                    if (genre.isNotEmpty)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.25),
-                          borderRadius: BorderRadius.circular(20),
+            SizedBox(
+              height: cardH + 50, // card + text below
+              child: row == null
+                  // Still loading
+                  ? const Center(child: CircularProgressIndicator())
+                  : row.isEmpty
+                      // Failed
+                      ? Center(
+                          child: Text('Could not load',
+                              style: TextStyle(color: Colors.grey[400])))
+                      : ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          itemCount: row.length,
+                          itemBuilder: (context, i) {
+                            final rec = row[i];
+                            final cover = rec['cover_url'] as String?;
+                            final title = '${rec['title'] ?? ''}';
+                            final genre = '${rec['genre'] ?? ''}'
+                                .split(',')
+                                .first
+                                .trim();
+                            final color =
+                                _palette[(rowIndex * 10 + i) % _palette.length];
+                            return GestureDetector(
+                              onTap: () => _showDetail(rec),
+                              child: Container(
+                                width: cardW,
+                                margin: const EdgeInsets.only(right: 10),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(10),
+                                      child: SizedBox(
+                                        width: cardW,
+                                        height: cardH,
+                                        child: cover != null
+                                            ? Image.network(cover,
+                                                fit: BoxFit.cover,
+                                                errorBuilder: (_, __, ___) =>
+                                                    Container(color: color))
+                                            : Container(color: color),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(title,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600)),
+                                    if (genre.isNotEmpty)
+                                      Text(genre,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                              fontSize: 11,
+                                              color: Colors.grey[500])),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
                         ),
-                        child: Text(genre,
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600)),
-                      ),
-                    const Spacer(),
-                    // Status dot
-                    if (status.isNotEmpty) _StatusDot(status: status),
-                    const SizedBox(height: 4),
-                    // Title
-                    Text(title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            height: 1.2)),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-  }
-}
-
-// ── Status dot ────────────────────────────────────────────────────────────────
-
-class _StatusDot extends StatelessWidget {
-  final String status;
-  const _StatusDot({required this.status});
-
-  @override
-  Widget build(BuildContext context) {
-    final s = status.toLowerCase();
-    final color = s == 'ongoing'
-        ? Colors.greenAccent
-        : s == 'completed'
-            ? Colors.lightBlueAccent
-            : s == 'hiatus'
-                ? Colors.orangeAccent
-                : Colors.white54;
-    return Row(
-      children: [
-        Container(
-          width: 6, height: 6,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: 4),
-        Text(status,
-            style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w600)),
-      ],
+            ),
+          ],
+        );
+      },
     );
   }
 }
 
-// ── Status badge (kept for detail sheet) ─────────────────────────────────────
+// ── Status badge ──────────────────────────────────────────────────────────────
 
 class _StatusBadge extends StatelessWidget {
   final String status;
   final bool isOngoing, isCompleted;
-  const _StatusBadge({required this.status, required this.isOngoing, required this.isCompleted});
+  const _StatusBadge(
+      {required this.status,
+      required this.isOngoing,
+      required this.isCompleted});
 
   @override
   Widget build(BuildContext context) {
     final isHiatus = status.toLowerCase() == 'hiatus';
-    final color = isOngoing ? Colors.green : isCompleted ? Colors.blue : isHiatus ? Colors.orange : Colors.grey;
+    final color = isOngoing
+        ? Colors.green
+        : isCompleted
+            ? Colors.blue
+            : isHiatus
+                ? Colors.orange
+                : Colors.grey;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
@@ -316,7 +246,8 @@ class _StatusBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(status,
-          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color[700])),
+          style: TextStyle(
+              fontSize: 11, fontWeight: FontWeight.w600, color: color[700])),
     );
   }
 }
@@ -335,7 +266,8 @@ class _GenreChip extends StatelessWidget {
         color: const Color(0xFF1A1A1A),
         borderRadius: BorderRadius.circular(20),
       ),
-      child: Text(label, style: const TextStyle(color: Colors.white, fontSize: 11)),
+      child: Text(label,
+          style: const TextStyle(color: Colors.white, fontSize: 11)),
     );
   }
 }
@@ -356,36 +288,49 @@ class _DetailSheetState extends State<_DetailSheet> {
   String? _error;
 
   Future<void> _addToLibrary() async {
-    setState(() { _adding = true; _error = null; });
+    setState(() {
+      _adding = true;
+      _error = null;
+    });
     try {
       await _api.addManga('${widget.rec['title'] ?? ''}');
-      setState(() { _added = true; _adding = false; });
+      setState(() {
+        _added = true;
+        _adding = false;
+      });
     } catch (e) {
-      setState(() { _error = 'Failed to add. Try again.'; _adding = false; });
+      setState(() {
+        _error = 'Failed to add. Try again.';
+        _adding = false;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final title    = '${widget.rec['title'] ?? ''}';
-    final genre    = '${widget.rec['genre'] ?? ''}';
-    final reason   = '${widget.rec['reason'] ?? ''}';
-    final status   = '${widget.rec['manga_status'] ?? ''}';
+    final title = '${widget.rec['title'] ?? ''}';
+    final genre = '${widget.rec['genre'] ?? ''}';
+    final reason = '${widget.rec['reason'] ?? ''}';
+    final status = '${widget.rec['manga_status'] ?? ''}';
     final chapters = widget.rec['total_chapters'];
-    final cover    = widget.rec['cover_url'] as String?;
-    final isOngoing   = status.toLowerCase() == 'ongoing';
+    final cover = widget.rec['cover_url'] as String?;
+    final isOngoing = status.toLowerCase() == 'ongoing';
     final isCompleted = status.toLowerCase() == 'completed';
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(context).viewInsets.bottom + 32),
+      padding: EdgeInsets.fromLTRB(
+          24, 24, 24, MediaQuery.of(context).viewInsets.bottom + 32),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Center(
             child: Container(
-              width: 40, height: 4,
-              decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2)),
             ),
           ),
           const SizedBox(height: 20),
@@ -393,34 +338,54 @@ class _DetailSheetState extends State<_DetailSheet> {
             Center(
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(16),
-                child: Image.network(cover, height: 180, fit: BoxFit.cover,
+                child: Image.network(cover,
+                    height: 180,
+                    fit: BoxFit.cover,
                     errorBuilder: (_, __, ___) => const SizedBox.shrink()),
               ),
             ),
           const SizedBox(height: 16),
-          Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 22)),
+          Text(title,
+              style:
+                  const TextStyle(fontWeight: FontWeight.bold, fontSize: 22)),
           const SizedBox(height: 8),
           Row(
             children: [
-              if (status.isNotEmpty) _StatusBadge(status: status, isOngoing: isOngoing, isCompleted: isCompleted),
-              if (status.isNotEmpty && chapters != null) const SizedBox(width: 8),
+              if (status.isNotEmpty)
+                _StatusBadge(
+                    status: status,
+                    isOngoing: isOngoing,
+                    isCompleted: isCompleted),
+              if (status.isNotEmpty && chapters != null)
+                const SizedBox(width: 8),
               if (chapters != null)
-                Text('$chapters chapters', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                Text('$chapters chapters',
+                    style:
+                        TextStyle(fontSize: 12, color: Colors.grey[600])),
             ],
           ),
           const SizedBox(height: 10),
           Wrap(
-            spacing: 6, runSpacing: 4,
-            children: genre.split(',').map((g) => g.trim()).where((g) => g.isNotEmpty)
-                .map((g) => _GenreChip(label: g)).toList(),
+            spacing: 6,
+            runSpacing: 4,
+            children: genre
+                .split(',')
+                .map((g) => g.trim())
+                .where((g) => g.isNotEmpty)
+                .map((g) => _GenreChip(label: g))
+                .toList(),
           ),
           const SizedBox(height: 14),
-          Text(reason, style: TextStyle(fontSize: 14, color: Colors.grey[700], height: 1.5)),
+          Text(reason,
+              style: TextStyle(
+                  fontSize: 14, color: Colors.grey[700], height: 1.5)),
           const SizedBox(height: 24),
           if (_error != null)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
-              child: Text(_error!, style: const TextStyle(color: Colors.red, fontSize: 13)),
+              child: Text(_error!,
+                  style:
+                      const TextStyle(color: Colors.red, fontSize: 13)),
             ),
           SizedBox(
             width: double.infinity,
@@ -430,13 +395,19 @@ class _DetailSheetState extends State<_DetailSheet> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF1A1A1A),
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14)),
               ),
               child: _adding
-                  ? const SizedBox(width: 20, height: 20,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : Text(_added ? 'Added to Library ✓' : 'Add to Library',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                          color: Colors.white, strokeWidth: 2))
+                  : Text(
+                      _added ? 'Added to Library ✓' : 'Add to Library',
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 15)),
             ),
           ),
         ],
