@@ -75,6 +75,8 @@ class _CardStackState extends State<_CardStack> with SingleTickerProviderStateMi
   late List<Map<String, dynamic>> _deck;
   Offset _drag = Offset.zero;
   bool _isDragging = false;
+  bool _loadingMore = false;
+  int _swipeCount = 0;
   late AnimationController _snapCtrl;
   late Animation<Offset> _snapAnim;
 
@@ -85,6 +87,19 @@ class _CardStackState extends State<_CardStack> with SingleTickerProviderStateMi
     _snapCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 200));
     _snapAnim = Tween<Offset>(begin: Offset.zero, end: Offset.zero).animate(_snapCtrl);
     _snapCtrl.addListener(() => setState(() => _drag = _snapAnim.value));
+  }
+
+  Future<void> _fetchMore() async {
+    if (_loadingMore) return;
+    setState(() => _loadingMore = true);
+    try {
+      final fresh = await _api.getRecommendations();
+      setState(() => _deck = fresh);
+    } catch (_) {
+      // keep existing deck on error
+    } finally {
+      setState(() { _loadingMore = false; _swipeCount = 0; });
+    }
   }
 
   @override
@@ -122,10 +137,15 @@ class _CardStackState extends State<_CardStack> with SingleTickerProviderStateMi
       _snapCtrl.forward(from: 0).then((_) {
         setState(() {
           final top = _deck.removeAt(0);
-          _deck.add(top); // cycle to bottom
+          _deck.add(top);
           _drag = Offset.zero;
           _isDragging = false;
+          _swipeCount++;
         });
+        // After swiping through all cards, fetch a fresh batch
+        if (_swipeCount >= widget.recs.length) {
+          _fetchMore();
+        }
       });
     } else {
       // Snap back
@@ -181,6 +201,18 @@ class _CardStackState extends State<_CardStack> with SingleTickerProviderStateMi
           ),
         ),
         const SizedBox(height: 20),
+        if (_loadingMore)
+          const Padding(
+            padding: EdgeInsets.only(top: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)),
+                SizedBox(width: 8),
+                Text('Finding new picks…', style: TextStyle(fontSize: 12, color: Colors.grey)),
+              ],
+            ),
+          ),
         // Info below card
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 32),
