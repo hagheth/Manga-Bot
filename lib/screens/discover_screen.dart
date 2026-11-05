@@ -22,9 +22,6 @@ const _palette = [
   Color(0xFF3A86FF),
 ];
 
-// Alternating heights for masonry feel
-const _leftHeights  = [200.0, 160.0, 220.0, 150.0, 190.0];
-const _rightHeights = [160.0, 210.0, 150.0, 200.0, 170.0];
 
 class DiscoverScreen extends ConsumerWidget {
   final ValueNotifier<int>? tapNotifier;
@@ -73,6 +70,7 @@ class DiscoverScreen extends ConsumerWidget {
           }
           return _RecommendGrid(initialRecs: recs);
         },
+
       ),
     );
   }
@@ -142,54 +140,20 @@ class _RecommendGridState extends State<_RecommendGrid> {
 
   @override
   Widget build(BuildContext context) {
-    // Split into left and right columns
-    final left  = <Map<String, dynamic>>[];
-    final right = <Map<String, dynamic>>[];
-    for (int i = 0; i < _items.length; i++) {
-      (i.isEven ? left : right).add(_items[i]);
-    }
-
-    return SingleChildScrollView(
+    return GridView.builder(
       controller: _scrollCtrl,
       padding: const EdgeInsets.fromLTRB(12, 4, 12, 100),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Column(
-              children: [
-                for (int i = 0; i < left.length; i++)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: _BentoCard(
-                      rec: left[i],
-                      height: _leftHeights[i % _leftHeights.length],
-                      colorIndex: (i * 2) % _palette.length,
-                      onTap: () => _showDetail(left[i]),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              children: [
-                const SizedBox(height: 28), // offset right column for stagger
-                for (int i = 0; i < right.length; i++)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: _BentoCard(
-                      rec: right[i],
-                      height: _rightHeights[i % _rightHeights.length],
-                      colorIndex: (i * 2 + 1) % _palette.length,
-                      onTap: () => _showDetail(right[i]),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ],
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 8,
+        mainAxisSpacing: 8,
+        childAspectRatio: 0.72,
+      ),
+      itemCount: _items.length,
+      itemBuilder: (context, i) => _BentoCard(
+        rec: _items[i],
+        colorIndex: i % _palette.length,
+        onTap: () => _showDetail(_items[i]),
       ),
     );
   }
@@ -199,13 +163,11 @@ class _RecommendGridState extends State<_RecommendGrid> {
 
 class _BentoCard extends StatelessWidget {
   final Map<String, dynamic> rec;
-  final double height;
   final int colorIndex;
   final VoidCallback onTap;
 
   const _BentoCard({
     required this.rec,
-    required this.height,
     required this.colorIndex,
     required this.onTap,
   });
@@ -222,9 +184,7 @@ class _BentoCard extends StatelessWidget {
       onTap: onTap,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
-        child: SizedBox(
-          height: height,
-          child: Stack(
+        child: Stack(
             fit: StackFit.expand,
             children: [
               // Background: cover image or solid color
@@ -286,8 +246,6 @@ class _BentoCard extends StatelessWidget {
                 ),
               ),
             ],
-          ),
-        ),
       ),
     );
   }
