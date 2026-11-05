@@ -76,6 +76,7 @@ class _CardStackState extends State<_CardStack> with SingleTickerProviderStateMi
   Offset _drag = Offset.zero;
   bool _isDragging = false;
   bool _fetching = false;
+  int _swiped = 0;
   late AnimationController _snapCtrl;
   late Animation<Offset> _snapAnim;
 
@@ -144,12 +145,13 @@ class _CardStackState extends State<_CardStack> with SingleTickerProviderStateMi
       _snapCtrl.forward(from: 0).then((_) {
         if (!mounted) return;
         setState(() {
-          _deck.removeAt(0); // discard swiped card
+          _deck.removeAt(0);
           _drag = Offset.zero;
           _isDragging = false;
+          _swiped++;
         });
-        // Silently refill when running low (trigger early for buffer)
-        if (_deck.length <= 7) {
+        // Fetch next 10 after every 10 swipes
+        if (_swiped % 10 == 0) {
           _refillInBackground();
         }
       });
