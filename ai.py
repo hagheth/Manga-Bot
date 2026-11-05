@@ -268,14 +268,14 @@ def recommend_manga(manga_list: list) -> list:
 
     # Fetch cover, chapter count and status from MangaDex
     from fetcher import fetch_manga_info
-    import httpx as _httpx
     for rec in results:
         info = fetch_manga_info(rec.get("title", ""))
         if info:
             rec["cover_url"] = info.get("cover_url")
             rec["manga_status"] = info.get("status")
-            # lastChapter is unreliable — use aggregate API for real count
-            rec["total_chapters"] = _fetch_chapter_count(rec.get("title", ""), _httpx)
+            # lastChapter is reliable only for completed manga
+            ch = info.get("total_chapters")
+            rec["total_chapters"] = ch if ch else None
         else:
             rec["cover_url"] = None
             rec["total_chapters"] = None
@@ -283,35 +283,6 @@ def recommend_manga(manga_list: list) -> list:
     return results
 
 
-def _fetch_chapter_count(title: str, httpx) -> str | None:
-    """Get actual chapter count from MangaDex aggregate endpoint."""
-    try:
-        r = httpx.get("https://api.mangadex.org/manga", params={
-            "title": title, "limit": 1,
-            "contentRating[]": ["safe", "suggestive"],
-            "order[relevance]": "desc",
-        }, timeout=8)
-        data = r.json().get("data", [])
-        if not data:
-            return None
-        manga_id = data[0]["id"]
-        agg = httpx.get(
-            f"https://api.mangadex.org/manga/{manga_id}/aggregate",
-            params={"translatedLanguage[]": ["en"]},
-            timeout=8,
-        )
-        volumes = agg.json().get("volumes", {})
-        chapters = set()
-        for vol in volumes.values():
-            for ch in vol.get("chapters", {}).keys():
-                try:
-                    float(ch)  # skip non-numeric keys
-                    chapters.add(ch)
-                except ValueError:
-                    pass
-        return str(len(chapters)) if chapters else None
-    except Exception:
-        return None
 
 
 def suggest_manga(manga_list: list, suggest_new: bool = False) -> str:
