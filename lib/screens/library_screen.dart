@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -147,7 +148,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 title: TextField(
                   controller: _searchCtrl,
                   decoration: InputDecoration(
-                    hintText: 'Search manga...',
+                    hintText: 'Search shelf...',
                     prefixIcon: const Icon(Icons.search, size: 20),
                     suffixIcon: _search.isNotEmpty
                         ? IconButton(
@@ -349,14 +350,24 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(
-                controller: urlCtrl,
-                decoration: const InputDecoration(
-                  hintText: 'https://mangafire.to/manga/...',
-                  labelText: 'Reading Site URL',
+              StatefulBuilder(
+                builder: (ctx, setFieldState) => TextField(
+                  controller: urlCtrl,
+                  decoration: InputDecoration(
+                    hintText: 'https://mangafire.to/manga/...',
+                    labelText: 'Reading Site URL',
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.content_paste_rounded, size: 18),
+                      tooltip: 'Paste',
+                      onPressed: () async {
+                        final data = await Clipboard.getData('text/plain');
+                        if (data?.text != null) setFieldState(() => urlCtrl.text = data!.text!);
+                      },
+                    ),
+                  ),
+                  keyboardType: TextInputType.url,
+                  autofocus: true,
                 ),
-                keyboardType: TextInputType.url,
-                autofocus: true,
               ),
               const SizedBox(height: 12),
               TextField(

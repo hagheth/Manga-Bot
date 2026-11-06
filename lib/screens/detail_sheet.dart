@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../models/manga.dart';
 import '../services/api_service.dart';
 
@@ -133,12 +134,24 @@ class _DetailSheetState extends State<_DetailSheet> {
               labelText: 'Website Link',
               hintText: 'https://...',
               border: const OutlineInputBorder(),
-              suffixIcon: _urlCtrl.text.isNotEmpty
-                  ? IconButton(
+              suffixIcon: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.content_paste_rounded, size: 18),
+                    tooltip: 'Paste',
+                    onPressed: () async {
+                      final data = await Clipboard.getData('text/plain');
+                      if (data?.text != null) setState(() => _urlCtrl.text = data!.text!);
+                    },
+                  ),
+                  if (_urlCtrl.text.isNotEmpty)
+                    IconButton(
                       icon: const Icon(Icons.clear, size: 18),
                       onPressed: () => setState(() => _urlCtrl.clear()),
-                    )
-                  : null,
+                    ),
+                ],
+              ),
             ),
             keyboardType: TextInputType.url,
             onChanged: (_) => setState(() {}),
