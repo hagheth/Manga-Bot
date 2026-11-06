@@ -233,13 +233,13 @@ def recommend_manga(manga_list: list, exclude_titles: list = None) -> list:
         "You are a manga recommendation expert. Based on this person's reading history:\n\n"
         + list_text
         + exclude_note
-        + "\n\nRecommend exactly 10 NEW manga they would enjoy that are NOT already in their list. "
-        "Return ONLY a JSON array, no extra text. Format:\n"
+        + "\n\nRecommend exactly 50 NEW manga they would enjoy that are NOT already in their list. "
+        "Return ONLY a JSON array of 50 items, no extra text. Format:\n"
         '[{"title": "...", "genre": "...", "reason": "..."}]\n'
         "- title: exact manga title\n"
         "- genre: 1-3 comma-separated genres (e.g. Action, Fantasy)\n"
         "- reason: one sentence why they would enjoy it based on their taste\n"
-        "Return only the JSON array."
+        "Return only the JSON array with exactly 50 entries."
     )
 
     response = client.chat.completions.create(
@@ -248,7 +248,7 @@ def recommend_manga(manga_list: list, exclude_titles: list = None) -> list:
             {"role": "system", "content": "You are a manga recommendation expert. Always respond with valid JSON only, no extra text."},
             {"role": "user", "content": prompt},
         ],
-        max_tokens=1800,
+        max_tokens=4000,
         temperature=0.7,
         tool_choice="none",
     )

@@ -142,11 +142,27 @@ def get_recommendations(exclude: str = "", refresh: bool = False):
         if r.get("cover_url"):
             r["cover_url"] = f"{RENDER_BASE}/proxy/image?url={quote(r['cover_url'], safe='')}"
 
-    # Only cache the base (no-exclude) response
+    # Cache the base (no-exclude) response
     if not exclude_list:
         _rec_cache = recs
         _rec_cache_time = now
 
+    return recs
+
+@app.get("/manga/recommend/all")
+def get_all_recommendations(refresh: bool = False):
+    """Return 50 AI-generated recommendations in one call, cached 1 hour."""
+    global _rec_cache, _rec_cache_time
+    now = _time.time()
+    if not refresh and _rec_cache and (now - _rec_cache_time) < _REC_TTL:
+        return _rec_cache
+    manga_list = list_manga(USER_ID)
+    recs = recommend_manga(manga_list)
+    for r in recs:
+        if r.get("cover_url"):
+            r["cover_url"] = f"{RENDER_BASE}/proxy/image?url={quote(r['cover_url'], safe='')}"
+    _rec_cache = recs
+    _rec_cache_time = now
     return recs
 
 
