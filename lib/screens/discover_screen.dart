@@ -24,7 +24,7 @@ class DiscoverScreen extends ConsumerWidget {
     final async = ref.watch(recommendProvider);
     final topPad = MediaQuery.of(context).padding.top;
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F2F2),
+      backgroundColor: Colors.black,
       body: Stack(
         children: [
           // Content — padded so rows don't hide under the island
@@ -77,12 +77,6 @@ class DiscoverScreen extends ConsumerWidget {
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
                             fontSize: 15)),
-                    const SizedBox(width: 10),
-                    GestureDetector(
-                      onTap: () => ref.invalidate(recommendProvider),
-                      child: const Icon(Icons.refresh_rounded,
-                          color: Colors.white, size: 18),
-                    ),
                   ],
                 ),
               ),
