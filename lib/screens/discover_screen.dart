@@ -8,6 +8,7 @@ final recommendProvider = FutureProvider.autoDispose<List<Map<String, dynamic>>>
   return _api.getRecommendations();
 });
 
+
 const _palette = [
   Color(0xFF4ECDC4), Color(0xFF7B68EE), Color(0xFFFF6B6B),
   Color(0xFF95E1D3), Color(0xFFF38181), Color(0xFFAA96DA),
@@ -52,7 +53,7 @@ class DiscoverScreen extends ConsumerWidget {
         ),
         data: (recs) => recs.isEmpty
             ? const Center(child: Text('Add manga to your library first!'))
-            : _DiscoverGrid(initialRecs: recs),
+            : _DiscoverGrid(recs: recs),
       ),
     );
   }
@@ -60,46 +61,11 @@ class DiscoverScreen extends ConsumerWidget {
 
 // ── Grid: 5 rows × 10 cards ───────────────────────────────────────────────────
 
-class _DiscoverGrid extends StatefulWidget {
-  final List<Map<String, dynamic>> initialRecs;
-  const _DiscoverGrid({required this.initialRecs});
+class _DiscoverGrid extends StatelessWidget {
+  final List<Map<String, dynamic>> recs;
+  const _DiscoverGrid({required this.recs});
 
-  @override
-  State<_DiscoverGrid> createState() => _DiscoverGridState();
-}
-
-class _DiscoverGridState extends State<_DiscoverGrid> {
-  late List<List<Map<String, dynamic>>?> _rows; // null = loading
-
-  @override
-  void initState() {
-    super.initState();
-    _rows = [widget.initialRecs, null, null, null, null];
-    _fetchRemaining();
-  }
-
-  Future<void> _fetchRemaining() async {
-    for (int i = 1; i < 5; i++) {
-      // Titles already shown — pass to backend AND use for hard dedup
-      final seenTitles = _rows
-          .whereType<List<Map<String, dynamic>>>()
-          .expand((r) => r)
-          .map((r) => '${r['title'] ?? ''}'.toLowerCase())
-          .where((t) => t.isNotEmpty)
-          .toSet();
-
-      try {
-        final data = await _api.getRecommendations(exclude: seenTitles.toList());
-        if (!mounted) return;
-        setState(() => _rows[i] = data);
-      } catch (_) {
-        if (!mounted) return;
-        setState(() => _rows[i] = []);
-      }
-    }
-  }
-
-  void _showDetail(Map<String, dynamic> rec) {
+  void _showDetail(BuildContext context, Map<String, dynamic> rec) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -114,44 +80,45 @@ class _DiscoverGridState extends State<_DiscoverGrid> {
   Widget build(BuildContext context) {
     const cardW = 110.0;
     const cardH = cardW * 1.5;
+    const rowCount = 5;
+    const perRow = 10;
 
     return ListView.builder(
       padding: const EdgeInsets.only(top: 4, bottom: 100),
-      itemCount: 5,
+      itemCount: rowCount,
       itemBuilder: (_, rowIdx) {
-        final row = _rows[rowIdx];
+        final start = rowIdx * perRow;
+        final end = (start + perRow).clamp(0, recs.length);
+        if (start >= recs.length) return const SizedBox.shrink();
+        final row = recs.sublist(start, end);
+
         return SizedBox(
-          height: cardH + 4, // tight — no label
-          child: row == null
-              ? const Center(child: CircularProgressIndicator(strokeWidth: 2))
-              : row.isEmpty
-                  ? const SizedBox.shrink() // hidden if truly empty
-                  : ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      itemCount: row.length,
-                      itemBuilder: (_, i) {
-                        final rec = row[i];
-                        final cover = rec['cover_url'] as String?;
-                        final color = _palette[(rowIdx * 10 + i) % _palette.length];
-                        return GestureDetector(
-                          onTap: () => _showDetail(rec),
-                          child: Container(
-                            width: cardW,
-                            height: cardH,
-                            margin: const EdgeInsets.only(right: 4),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: cover != null
-                                  ? Image.network(cover, fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) =>
-                                          Container(color: color))
-                                  : Container(color: color),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
+          height: cardH + 4,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            itemCount: row.length,
+            itemBuilder: (_, i) {
+              final rec = row[i];
+              final cover = rec['cover_url'] as String?;
+              final color = _palette[(rowIdx * perRow + i) % _palette.length];
+              return GestureDetector(
+                onTap: () => _showDetail(context, rec),
+                child: Container(
+                  width: cardW,
+                  height: cardH,
+                  margin: const EdgeInsets.only(right: 4),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: cover != null
+                        ? Image.network(cover, fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(color: color))
+                        : Container(color: color),
+                  ),
+                ),
+              );
+            },
+          ),
         );
       },
     );

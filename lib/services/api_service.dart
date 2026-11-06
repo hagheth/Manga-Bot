@@ -70,11 +70,9 @@ class ApiService {
 
   // ── Discover ───────────────────────────────────────────────────────────
 
-  Future<List<Map<String, dynamic>>> getRecommendations({List<String> exclude = const [], bool refresh = false}) async {
-    final params = <String, dynamic>{};
-    if (exclude.isNotEmpty) params['exclude'] = exclude.join(',');
-    if (refresh) params['refresh'] = 'true';
-    final res = await _dio.get('/manga/recommend', queryParameters: params.isEmpty ? null : params);
+  Future<List<Map<String, dynamic>>> getRecommendations({bool refresh = false}) async {
+    final params = refresh ? {'refresh': 'true'} : null;
+    final res = await _dio.get('/manga/recommend/all', queryParameters: params);
     return (res.data as List).map((e) => Map<String, dynamic>.from(e as Map)).toList();
   }
 
