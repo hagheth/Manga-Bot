@@ -114,11 +114,17 @@ def search_manga_titles(query: str, limit: int = 10) -> list:
                         if fname:
                             cover_url = f"https://uploads.mangadex.org/covers/{manga['id']}/{fname}.256.jpg"
                         break
+                desc = attrs.get("description", {})
+                synopsis = desc.get("en") or next(iter(desc.values()), "")
+                if synopsis and len(synopsis) > 300:
+                    synopsis = synopsis[:300].rstrip() + "..."
                 results.append({
                     "title": title,
                     "cover_url": cover_url,
                     "manga_id": manga["id"],
-                    "status": attrs.get("status", "").capitalize() or None,
+                    "manga_status": attrs.get("status", "").capitalize() or None,
+                    "total_chapters": attrs.get("lastChapter") or None,
+                    "reason": synopsis,
                 })
             return results
     except Exception:
