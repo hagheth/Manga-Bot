@@ -77,6 +77,7 @@ class _DiscoverGridState extends State<_DiscoverGrid> {
   final List<ScrollController> _ctrls =
       List.generate(_rowCount, (_) => ScrollController());
   final List<bool> _paused = List.filled(_rowCount, false);
+  final List<bool> _dragging = List.filled(_rowCount, false);
 
   @override
   void initState() {
@@ -99,8 +100,12 @@ class _DiscoverGridState extends State<_DiscoverGrid> {
     final target = goRight ? max : 0.0;
     final dist = (target - ctrl.position.pixels).abs();
     if (dist < 1) {
-      ctrl.jumpTo(goRight ? 0 : max);
-      _scroll(row, goRight);
+      // Break synchronous recursion via post-frame callback
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || _paused[row] || !_ctrls[row].hasClients) return;
+        _ctrls[row].jumpTo(goRight ? 0 : max);
+        _scroll(row, goRight);
+      });
       return;
     }
     final ms = (dist / _speed * 1000).round();
@@ -110,17 +115,15 @@ class _DiscoverGridState extends State<_DiscoverGrid> {
   }
 
   void _pause(int row) {
+    // Don't call jumpTo here — it re-triggers ScrollNotification causing an infinite loop.
+    // The user's drag naturally overrides the in-flight animateTo.
     _paused[row] = true;
-    // Cancel any in-flight animation by jumping to current position
-    if (_ctrls[row].hasClients) {
-      _ctrls[row].jumpTo(_ctrls[row].position.pixels);
-    }
   }
 
   void _resume(int row) {
     if (!mounted || !_paused[row]) return;
     _paused[row] = false;
-    _scroll(row, row.isEven);
+    Future.microtask(() => _scroll(row, row.isEven));
   }
 
   @override
@@ -159,9 +162,10 @@ class _DiscoverGridState extends State<_DiscoverGrid> {
           child: NotificationListener<ScrollNotification>(
             onNotification: (n) {
               if (n is ScrollStartNotification && n.dragDetails != null) {
+                _dragging[rowIdx] = true;
                 _pause(rowIdx);
-              } else if (n is ScrollEndNotification && n.dragDetails == null) {
-                // fling/snap finished — resume after short pause
+              } else if (n is ScrollEndNotification && _dragging[rowIdx]) {
+                _dragging[rowIdx] = false;
                 Future.delayed(const Duration(milliseconds: 800), () => _resume(rowIdx));
               }
               return false;
