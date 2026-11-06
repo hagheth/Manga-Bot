@@ -76,6 +76,7 @@ class _DiscoverGridState extends State<_DiscoverGrid> {
 
   final List<ScrollController> _ctrls =
       List.generate(_rowCount, (_) => ScrollController());
+  final List<bool> _paused = List.filled(_rowCount, false);
 
   @override
   void initState() {
@@ -91,7 +92,7 @@ class _DiscoverGridState extends State<_DiscoverGrid> {
   }
 
   void _scroll(int row, bool goRight) {
-    if (!mounted || !_ctrls[row].hasClients) return;
+    if (!mounted || _paused[row] || !_ctrls[row].hasClients) return;
     final ctrl = _ctrls[row];
     final max = ctrl.position.maxScrollExtent;
     if (max <= 0) return;
@@ -105,7 +106,21 @@ class _DiscoverGridState extends State<_DiscoverGrid> {
     final ms = (dist / _speed * 1000).round();
     ctrl
         .animateTo(target, duration: Duration(milliseconds: ms), curve: Curves.linear)
-        .then((_) { if (mounted) _scroll(row, goRight); });
+        .then((_) { if (mounted && !_paused[row]) _scroll(row, goRight); });
+  }
+
+  void _pause(int row) {
+    _paused[row] = true;
+    // Cancel any in-flight animation by jumping to current position
+    if (_ctrls[row].hasClients) {
+      _ctrls[row].jumpTo(_ctrls[row].position.pixels);
+    }
+  }
+
+  void _resume(int row) {
+    if (!mounted || !_paused[row]) return;
+    _paused[row] = false;
+    _scroll(row, row.isEven);
   }
 
   @override
@@ -141,31 +156,42 @@ class _DiscoverGridState extends State<_DiscoverGrid> {
 
         return SizedBox(
           height: cardH + 4,
-          child: ListView.builder(
-            controller: _ctrls[rowIdx],
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            itemCount: row.length,
-            itemBuilder: (_, i) {
-              final rec = row[i];
-              final cover = rec['cover_url'] as String?;
-              final color = _palette[(rowIdx * _perRow + i) % _palette.length];
-              return GestureDetector(
-                onTap: () => _showDetail(rec),
-                child: Container(
-                  width: cardW,
-                  height: cardH,
-                  margin: const EdgeInsets.only(right: 4),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: cover != null
-                        ? Image.network(cover, fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Container(color: color))
-                        : Container(color: color),
-                  ),
-                ),
-              );
+          child: NotificationListener<ScrollNotification>(
+            onNotification: (n) {
+              if (n is ScrollStartNotification && n.dragDetails != null) {
+                _pause(rowIdx);
+              } else if (n is ScrollEndNotification && n.dragDetails == null) {
+                // fling/snap finished — resume after short pause
+                Future.delayed(const Duration(milliseconds: 800), () => _resume(rowIdx));
+              }
+              return false;
             },
+            child: ListView.builder(
+              controller: _ctrls[rowIdx],
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              itemCount: row.length,
+              itemBuilder: (_, i) {
+                final rec = row[i];
+                final cover = rec['cover_url'] as String?;
+                final color = _palette[(rowIdx * _perRow + i) % _palette.length];
+                return GestureDetector(
+                  onTap: () => _showDetail(rec),
+                  child: Container(
+                    width: cardW,
+                    height: cardH,
+                    margin: const EdgeInsets.only(right: 4),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: cover != null
+                          ? Image.network(cover, fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(color: color))
+                          : Container(color: color),
+                    ),
+                  ),
+                );
+              },
+            ),
           ),
         );
       },
