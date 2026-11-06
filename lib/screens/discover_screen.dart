@@ -56,15 +56,14 @@ class DiscoverScreen extends ConsumerWidget {
             right: 0,
             child: Center(
               child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text('Discover',
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15)),
-                  ],
-                ),
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Discover',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15)),
+                ],
               ),
             ),
           ),
