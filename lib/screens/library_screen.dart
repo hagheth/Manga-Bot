@@ -473,7 +473,7 @@ class _SectionSliver extends StatelessWidget {
             const SizedBox(height: 14),
             // Horizontal scroll
             SizedBox(
-              height: 230,
+              height: 273,
               child: ListView.builder(
                 controller: scrollCtrl,
                 scrollDirection: Axis.horizontal,
@@ -532,7 +532,7 @@ class _MangaCover extends StatelessWidget {
         }
       },
       child: Container(
-        width: 120,
+        width: 150,
         margin: const EdgeInsets.only(right: 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -545,8 +545,8 @@ class _MangaCover extends StatelessWidget {
                   child: coverUrl.isNotEmpty
                       ? CachedNetworkImage(
                           imageUrl: coverUrl,
-                          width: 120,
-                          height: 170,
+                          width: 150,
+                          height: 213,
                           fit: BoxFit.cover,
                           placeholder: (_, __) => _placeholder(),
                           errorWidget: (_, __, ___) => _placeholder(),
@@ -612,8 +612,8 @@ class _MangaCover extends StatelessWidget {
   }
 
   Widget _placeholder() => Container(
-        width: 120,
-        height: 170,
+        width: 150,
+        height: 213,
         decoration: BoxDecoration(
           color: Colors.grey[850],
           borderRadius: BorderRadius.circular(10),
