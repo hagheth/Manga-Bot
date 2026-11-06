@@ -70,42 +70,39 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     final showDropdown = _searching || _suggestions.isNotEmpty;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.transparent,
       body: Stack(
         children: [
-          // Content
+          // Content — fills from top so island truly floats over it
           GestureDetector(
             onTap: _clearSearch,
-            child: Padding(
-              padding: EdgeInsets.only(top: topPad + 60),
-              child: async.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (e, _) => Center(
-                  child: Column(mainAxisSize: MainAxisSize.min, children: [
-                    const Icon(Icons.error_outline, size: 48, color: Colors.grey),
-                    const SizedBox(height: 12),
-                    Text('Could not load', style: TextStyle(color: Colors.grey[600])),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () => ref.invalidate(recommendProvider),
-                      child: const Text('Retry'),
-                    ),
-                  ]),
-                ),
-                data: (recs) => recs.isEmpty
-                    ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-                        const Text('Could not load recommendations'),
-                        const SizedBox(height: 12),
-                        ElevatedButton(
-                          onPressed: () => ref.invalidate(recommendProvider),
-                          child: const Text('Retry'),
-                        ),
-                      ]))
-                    : RefreshIndicator(
-                        onRefresh: () async => ref.invalidate(recommendProvider),
-                        child: _DiscoverGrid(recs: recs),
-                      ),
+            child: async.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Center(
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  const Icon(Icons.error_outline, size: 48, color: Colors.grey),
+                  const SizedBox(height: 12),
+                  Text('Could not load', style: TextStyle(color: Colors.grey[600])),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => ref.invalidate(recommendProvider),
+                    child: const Text('Retry'),
+                  ),
+                ]),
               ),
+              data: (recs) => recs.isEmpty
+                  ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+                      const Text('Could not load recommendations'),
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                        onPressed: () => ref.invalidate(recommendProvider),
+                        child: const Text('Retry'),
+                      ),
+                    ]))
+                  : RefreshIndicator(
+                      onRefresh: () async => ref.invalidate(recommendProvider),
+                      child: _DiscoverGrid(recs: recs, topPad: topPad),
+                    ),
             ),
           ),
           // Search island
@@ -140,7 +137,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                         style: const TextStyle(fontSize: 14, color: Colors.white),
                         cursorColor: Colors.white,
                         decoration: const InputDecoration(
-                          hintText: 'Discover',
+                          hintText: 'Search manga...',
                           hintStyle: TextStyle(fontSize: 14, color: Colors.white54),
                           border: InputBorder.none,
                           enabledBorder: InputBorder.none,
@@ -226,7 +223,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
 class _DiscoverGrid extends StatefulWidget {
   final List<Map<String, dynamic>> recs;
-  const _DiscoverGrid({required this.recs});
+  final double topPad;
+  const _DiscoverGrid({required this.recs, this.topPad = 0});
 
   @override
   State<_DiscoverGrid> createState() => _DiscoverGridState();
@@ -319,7 +317,7 @@ class _DiscoverGridState extends State<_DiscoverGrid> {
     const cardH = cardW * 1.5;
 
     return ListView.builder(
-      padding: const EdgeInsets.only(top: 4, bottom: 100),
+      padding: EdgeInsets.only(top: widget.topPad + 60, bottom: 100),
       itemCount: _rowCount,
       itemBuilder: (_, rowIdx) {
         final start = rowIdx * _perRow;
