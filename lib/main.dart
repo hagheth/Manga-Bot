@@ -72,9 +72,9 @@ class _MainShellState extends State<MainShell> {
 
   late final List<Widget> _screens = [
     LibraryScreen(tapNotifier: _tapNotifiers[0]),
-    const ChatScreen(),
+    DiscoverScreen(tapNotifier: _tapNotifiers[1]),
     StatsScreen(tapNotifier: _tapNotifiers[2]),
-    DiscoverScreen(tapNotifier: _tapNotifiers[3]),
+    const ChatScreen(),
   ];
 
   @override
@@ -85,9 +85,9 @@ class _MainShellState extends State<MainShell> {
 
   static const _icons = [
     Icons.menu_book_rounded,
-    Icons.chat_bubble_outline_rounded,
-    Icons.bar_chart_rounded,
     Icons.explore_rounded,
+    Icons.bar_chart_rounded,
+    Icons.chat_bubble_outline_rounded,
   ];
 
   @override
