@@ -242,19 +242,22 @@ def recommend_manga(manga_list: list, exclude_titles: list = None) -> list:
         "Return only the JSON array with exactly 50 entries."
     )
 
-    response = client.chat.completions.create(
-        model="openai/gpt-oss-120b",
-        messages=[
-            {"role": "system", "content": "You are a manga recommendation expert. Always respond with valid JSON only, no extra text."},
-            {"role": "user", "content": prompt},
-        ],
-        max_tokens=4000,
-        temperature=0.7,
-        tool_choice="none",
-    )
+    try:
+        response = client.chat.completions.create(
+            model="openai/gpt-oss-120b",
+            messages=[
+                {"role": "system", "content": "You are a manga recommendation expert. Always respond with valid JSON only, no extra text."},
+                {"role": "user", "content": prompt},
+            ],
+            max_tokens=6000,
+            temperature=0.7,
+        )
+        raw = (response.choices[0].message.content or "").strip()
+    except Exception as e:
+        logger.error(f"Groq API error in recommend_manga: {e}")
+        return []
 
-    raw = response.choices[0].message.content.strip()
-    logger.info(f"Recommend raw response: {raw!r}")
+    logger.info(f"Recommend raw response (first 300): {raw[:300]!r}")
 
     import re
     # Try extracting from code block first
@@ -270,8 +273,8 @@ def recommend_manga(manga_list: list, exclude_titles: list = None) -> list:
         results = json.loads(candidate)
         filtered = [r for r in results if r.get("title", "").lower() not in existing_titles]
         results = filtered if filtered else results
-    except json.JSONDecodeError:
-        logger.warning(f"Failed to parse recommend response: {candidate!r}")
+    except (json.JSONDecodeError, Exception) as e:
+        logger.warning(f"Failed to parse recommend response ({e}): {candidate[:200]!r}")
         return []
 
     # Fetch cover, chapter count and status from MangaDex
