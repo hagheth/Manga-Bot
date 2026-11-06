@@ -22,38 +22,73 @@ class DiscoverScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(recommendProvider);
+    final topPad = MediaQuery.of(context).padding.top;
     return Scaffold(
       backgroundColor: const Color(0xFFF2F2F2),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFF2F2F2),
-        surfaceTintColor: Colors.transparent,
-        centerTitle: true,
-        title: const Text('Discover',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded),
-            onPressed: () => ref.invalidate(recommendProvider),
+      body: Stack(
+        children: [
+          // Content — padded so rows don't hide under the island
+          Padding(
+            padding: EdgeInsets.only(top: topPad + 52),
+            child: async.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Center(
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  const Icon(Icons.error_outline, size: 48, color: Colors.grey),
+                  const SizedBox(height: 12),
+                  Text('Could not load', style: TextStyle(color: Colors.grey[600])),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => ref.invalidate(recommendProvider),
+                    child: const Text('Retry'),
+                  ),
+                ]),
+              ),
+              data: (recs) => recs.isEmpty
+                  ? const Center(child: Text('Add manga to your library first!'))
+                  : _DiscoverGrid(recs: recs),
+            ),
+          ),
+          // Island bar
+          Positioned(
+            top: topPad + 8,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Container(
+                height: 38,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1A1A1A),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.18),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('Discover',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15)),
+                    const SizedBox(width: 10),
+                    GestureDetector(
+                      onTap: () => ref.invalidate(recommendProvider),
+                      child: const Icon(Icons.refresh_rounded,
+                          color: Colors.white, size: 18),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
         ],
-      ),
-      body: async.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            const Icon(Icons.error_outline, size: 48, color: Colors.grey),
-            const SizedBox(height: 12),
-            Text('Could not load', style: TextStyle(color: Colors.grey[600])),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () => ref.invalidate(recommendProvider),
-              child: const Text('Retry'),
-            ),
-          ]),
-        ),
-        data: (recs) => recs.isEmpty
-            ? const Center(child: Text('Add manga to your library first!'))
-            : _DiscoverGrid(recs: recs),
       ),
     );
   }
