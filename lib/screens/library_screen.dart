@@ -119,64 +119,31 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   @override
   Widget build(BuildContext context) {
     final allAsync = ref.watch(mangaProvider(null));
+    final topPad = MediaQuery.of(context).padding.top;
 
     return Scaffold(
-      body: allAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
-        data: (all) {
-          final filtered = _search.isEmpty
-              ? all
-              : all.where((m) => m.title.toLowerCase().contains(_search)).toList();
+      body: Stack(
+        children: [
+          allAsync.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, _) => Center(child: Text('Error: $e')),
+            data: (all) {
+              final filtered = _search.isEmpty
+                  ? all
+                  : all.where((m) => m.title.toLowerCase().contains(_search)).toList();
 
-          final reading   = _sorted(filtered.where((m) => m.status == 'reading').toList());
-          final completed = _sorted(filtered.where((m) => m.status == 'completed').toList());
-          final dropped   = _sorted(filtered.where((m) => m.status == 'dropped').toList());
+              final reading   = _sorted(filtered.where((m) => m.status == 'reading').toList());
+              final completed = _sorted(filtered.where((m) => m.status == 'completed').toList());
+              final dropped   = _sorted(filtered.where((m) => m.status == 'dropped').toList());
 
-          return CustomScrollView(
-            controller: _mainScroll,
-            slivers: [
-              // ── App bar ──────────────────────────────────────────────────
-              SliverAppBar(
-                pinned: true,
-                titleSpacing: 12,
-                leading: IconButton(
-                  icon: const Icon(Icons.add),
-                  tooltip: 'Add Manga',
-                  onPressed: () => _showAddOptions(context),
-                ),
-                title: TextField(
-                  controller: _searchCtrl,
-                  decoration: InputDecoration(
-                    hintText: 'Search shelf...',
-                    prefixIcon: const Icon(Icons.search, size: 20),
-                    suffixIcon: _search.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear, size: 18),
-                            onPressed: () { _searchCtrl.clear(); setState(() => _search = ''); },
-                          )
-                        : null,
-                    filled: true,
-                    isDense: true,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(24),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                  onChanged: (v) => setState(() => _search = v.toLowerCase()),
-                ),
-                actions: [
-                  IconButton(
-                    icon: const Icon(Icons.sort),
-                    tooltip: 'Sort',
-                    onPressed: () => _showSortSheet(context),
-                  ),
-                ],
-              ),
+              return CustomScrollView(
+                controller: _mainScroll,
+                slivers: [
+                  // Space for floating islands
+                  SliverToBoxAdapter(child: SizedBox(height: topPad + 60)),
 
-              // ── Header ───────────────────────────────────────────────────
-              SliverToBoxAdapter(
+                  // ── Header ───────────────────────────────────────────────────
+                  SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
                   child: Column(
@@ -261,6 +228,86 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
             ],
           );
         },
+      ),
+
+          // ── Floating islands ─────────────────────────────────────────
+          Positioned(
+            top: topPad + 8,
+            left: 16,
+            right: 16,
+            child: Row(
+              children: [
+                // Add button island
+                GestureDetector(
+                  onTap: () => _showAddOptions(context),
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.12), blurRadius: 10, offset: const Offset(0, 2))],
+                    ),
+                    child: const Icon(Icons.add, size: 20),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Search field island
+                Expanded(
+                  child: Container(
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.12), blurRadius: 10, offset: const Offset(0, 2))],
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.search, size: 16, color: Colors.grey),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: TextField(
+                            controller: _searchCtrl,
+                            onChanged: (v) => setState(() => _search = v.toLowerCase()),
+                            style: const TextStyle(fontSize: 14),
+                            decoration: const InputDecoration(
+                              hintText: 'Search shelf...',
+                              hintStyle: TextStyle(fontSize: 14, color: Colors.grey),
+                              border: InputBorder.none,
+                              isDense: true,
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                          ),
+                        ),
+                        if (_search.isNotEmpty)
+                          GestureDetector(
+                            onTap: () { _searchCtrl.clear(); setState(() => _search = ''); },
+                            child: const Icon(Icons.close, size: 16, color: Colors.grey),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Sort button island
+                GestureDetector(
+                  onTap: () => _showSortSheet(context),
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.12), blurRadius: 10, offset: const Offset(0, 2))],
+                    ),
+                    child: const Icon(Icons.sort, size: 20),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
