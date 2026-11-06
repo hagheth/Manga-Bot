@@ -61,11 +61,60 @@ class DiscoverScreen extends ConsumerWidget {
 
 // ── Grid: 5 rows × 10 cards ───────────────────────────────────────────────────
 
-class _DiscoverGrid extends StatelessWidget {
+class _DiscoverGrid extends StatefulWidget {
   final List<Map<String, dynamic>> recs;
   const _DiscoverGrid({required this.recs});
 
-  void _showDetail(BuildContext context, Map<String, dynamic> rec) {
+  @override
+  State<_DiscoverGrid> createState() => _DiscoverGridState();
+}
+
+class _DiscoverGridState extends State<_DiscoverGrid> {
+  static const _rowCount = 5;
+  static const _perRow = 10;
+  static const _speed = 25.0; // px/sec
+
+  final List<ScrollController> _ctrls =
+      List.generate(_rowCount, (_) => ScrollController());
+
+  @override
+  void initState() {
+    super.initState();
+    for (int i = 0; i < _rowCount; i++) {
+      final goRight = i.isEven;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || !_ctrls[i].hasClients) return;
+        if (!goRight) _ctrls[i].jumpTo(_ctrls[i].position.maxScrollExtent);
+        _scroll(i, goRight);
+      });
+    }
+  }
+
+  void _scroll(int row, bool goRight) {
+    if (!mounted || !_ctrls[row].hasClients) return;
+    final ctrl = _ctrls[row];
+    final max = ctrl.position.maxScrollExtent;
+    if (max <= 0) return;
+    final target = goRight ? max : 0.0;
+    final dist = (target - ctrl.position.pixels).abs();
+    if (dist < 1) {
+      ctrl.jumpTo(goRight ? 0 : max);
+      _scroll(row, goRight);
+      return;
+    }
+    final ms = (dist / _speed * 1000).round();
+    ctrl
+        .animateTo(target, duration: Duration(milliseconds: ms), curve: Curves.linear)
+        .then((_) { if (mounted) _scroll(row, goRight); });
+  }
+
+  @override
+  void dispose() {
+    for (final c in _ctrls) c.dispose();
+    super.dispose();
+  }
+
+  void _showDetail(Map<String, dynamic> rec) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -78,32 +127,31 @@ class _DiscoverGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const cardW = 110.0;
+    const cardW = 147.0;
     const cardH = cardW * 1.5;
-    const rowCount = 5;
-    const perRow = 10;
 
     return ListView.builder(
       padding: const EdgeInsets.only(top: 4, bottom: 100),
-      itemCount: rowCount,
+      itemCount: _rowCount,
       itemBuilder: (_, rowIdx) {
-        final start = rowIdx * perRow;
-        final end = (start + perRow).clamp(0, recs.length);
-        if (start >= recs.length) return const SizedBox.shrink();
-        final row = recs.sublist(start, end);
+        final start = rowIdx * _perRow;
+        final end = (start + _perRow).clamp(0, widget.recs.length);
+        if (start >= widget.recs.length) return const SizedBox.shrink();
+        final row = widget.recs.sublist(start, end);
 
         return SizedBox(
           height: cardH + 4,
           child: ListView.builder(
+            controller: _ctrls[rowIdx],
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 8),
             itemCount: row.length,
             itemBuilder: (_, i) {
               final rec = row[i];
               final cover = rec['cover_url'] as String?;
-              final color = _palette[(rowIdx * perRow + i) % _palette.length];
+              final color = _palette[(rowIdx * _perRow + i) % _palette.length];
               return GestureDetector(
-                onTap: () => _showDetail(context, rec),
+                onTap: () => _showDetail(rec),
                 child: Container(
                   width: cardW,
                   height: cardH,
