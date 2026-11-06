@@ -77,7 +77,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           GestureDetector(
             onTap: _clearSearch,
             child: Padding(
-              padding: EdgeInsets.only(top: topPad + 52),
+              padding: EdgeInsets.only(top: topPad + 60),
               child: async.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (e, _) => Center(
@@ -111,41 +111,52 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           // Search island
           Positioned(
             top: topPad + 8,
-            left: 32,
-            right: 32,
+            left: 16,
+            right: 16,
             child: Container(
-              height: 36,
+              height: 44,
               decoration: BoxDecoration(
-                color: const Color(0xFFF0F0F0),
-                borderRadius: BorderRadius.circular(20),
+                color: const Color(0xFF1A1A1A),
+                borderRadius: BorderRadius.circular(22),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 14),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 children: [
-                  const Icon(Icons.search, size: 16, color: Colors.grey),
-                  const SizedBox(width: 6),
+                  const Icon(Icons.search, size: 16, color: Colors.white54),
+                  const SizedBox(width: 8),
                   Expanded(
-                    child: TextField(
-                      controller: _searchCtrl,
-                      focusNode: _focus,
-                      onChanged: _onSearch,
-                      style: const TextStyle(fontSize: 14),
-                      decoration: const InputDecoration(
-                        hintText: 'Discover',
-                        hintStyle: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF1A1A1A),
-                            fontSize: 14),
-                        border: InputBorder.none,
-                        isDense: true,
-                        contentPadding: EdgeInsets.zero,
+                    child: Theme(
+                      data: Theme.of(context).copyWith(
+                        inputDecorationTheme: const InputDecorationTheme(
+                          border: InputBorder.none,
+                          filled: true,
+                          fillColor: Colors.transparent,
+                        ),
+                      ),
+                      child: TextField(
+                        controller: _searchCtrl,
+                        focusNode: _focus,
+                        onChanged: _onSearch,
+                        style: const TextStyle(fontSize: 14, color: Colors.white),
+                        cursorColor: Colors.white,
+                        decoration: const InputDecoration(
+                          hintText: 'Discover',
+                          hintStyle: TextStyle(fontSize: 14, color: Colors.white54),
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          filled: true,
+                          fillColor: Colors.transparent,
+                          isDense: true,
+                          contentPadding: EdgeInsets.zero,
+                        ),
                       ),
                     ),
                   ),
                   if (_searchCtrl.text.isNotEmpty)
                     GestureDetector(
                       onTap: _clearSearch,
-                      child: const Icon(Icons.close, size: 16, color: Colors.grey),
+                      child: const Icon(Icons.close, size: 16, color: Colors.white54),
                     ),
                 ],
               ),
@@ -154,7 +165,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           // Dropdown results
           if (showDropdown)
             Positioned(
-              top: topPad + 8 + 36 + 6,
+              top: topPad + 8 + 44 + 6,
               left: 32,
               right: 32,
               child: Material(
