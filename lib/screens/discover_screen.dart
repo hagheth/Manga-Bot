@@ -78,6 +78,8 @@ class _DiscoverGridState extends State<_DiscoverGrid> {
       List.generate(_rowCount, (_) => ScrollController());
   final List<bool> _paused = List.filled(_rowCount, false);
   final List<bool> _dragging = List.filled(_rowCount, false);
+  // Prevents our own jumpTo calls from re-triggering the notification handler
+  final List<bool> _cancelling = List.filled(_rowCount, false);
 
   @override
   void initState() {
@@ -100,10 +102,11 @@ class _DiscoverGridState extends State<_DiscoverGrid> {
     final target = goRight ? max : 0.0;
     final dist = (target - ctrl.position.pixels).abs();
     if (dist < 1) {
-      // Break synchronous recursion via post-frame callback
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted || _paused[row] || !_ctrls[row].hasClients) return;
+        _cancelling[row] = true;
         _ctrls[row].jumpTo(goRight ? 0 : max);
+        _cancelling[row] = false;
         _scroll(row, goRight);
       });
       return;
@@ -114,9 +117,13 @@ class _DiscoverGridState extends State<_DiscoverGrid> {
         .then((_) { if (mounted && !_paused[row]) _scroll(row, goRight); });
   }
 
-  void _pause(int row) {
-    // Don't call jumpTo here — it re-triggers ScrollNotification causing an infinite loop.
-    // The user's drag naturally overrides the in-flight animateTo.
+  // Called on first pointer-down (before gesture arena) to kill the animation
+  // so the tap gesture can resolve cleanly.
+  void _cancelAnimation(int row) {
+    if (!_ctrls[row].hasClients) return;
+    _cancelling[row] = true;
+    _ctrls[row].jumpTo(_ctrls[row].position.pixels);
+    _cancelling[row] = false;
     _paused[row] = true;
   }
 
@@ -159,18 +166,28 @@ class _DiscoverGridState extends State<_DiscoverGrid> {
 
         return SizedBox(
           height: cardH + 4,
-          child: NotificationListener<ScrollNotification>(
-            onNotification: (n) {
-              if (n is ScrollStartNotification && n.dragDetails != null) {
-                _dragging[rowIdx] = true;
-                _pause(rowIdx);
-              } else if (n is ScrollEndNotification && _dragging[rowIdx]) {
-                _dragging[rowIdx] = false;
-                Future.delayed(const Duration(milliseconds: 800), () => _resume(rowIdx));
+          child: Listener(
+            // onPointerDown fires before the gesture arena — cancels animateTo
+            // so the tap recognizer can win cleanly.
+            onPointerDown: (_) => _cancelAnimation(rowIdx),
+            onPointerUp: (_) {
+              // If the user just tapped (no drag), resume after the tap completes.
+              if (!_dragging[rowIdx]) {
+                Future.delayed(const Duration(milliseconds: 400), () => _resume(rowIdx));
               }
-              return false;
             },
-            child: ListView.builder(
+            child: NotificationListener<ScrollNotification>(
+              onNotification: (n) {
+                if (_cancelling[rowIdx]) return false;
+                if (n is ScrollStartNotification && n.dragDetails != null) {
+                  _dragging[rowIdx] = true;
+                } else if (n is ScrollEndNotification && _dragging[rowIdx]) {
+                  _dragging[rowIdx] = false;
+                  Future.delayed(const Duration(milliseconds: 800), () => _resume(rowIdx));
+                }
+                return false;
+              },
+              child: ListView.builder(
               controller: _ctrls[rowIdx],
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -195,6 +212,7 @@ class _DiscoverGridState extends State<_DiscoverGrid> {
                   ),
                 );
               },
+            ),
             ),
           ),
         );
