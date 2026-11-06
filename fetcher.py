@@ -90,6 +90,41 @@ def fetch_manga_info(title: str) -> dict | None:
     except Exception:
         return None
 
+def search_manga_titles(query: str, limit: int = 10) -> list:
+    """Search MangaDex for manga by keyword. Returns list of {title, cover_url, manga_id, status}."""
+    try:
+        with httpx.Client(timeout=10) as client:
+            r = client.get(f"{MANGADEX_API}/manga", params={
+                "title": query,
+                "limit": limit,
+                "includes[]": ["cover_art"],
+                "contentRating[]": ["safe", "suggestive"],
+                "order[relevance]": "desc",
+            })
+            r.raise_for_status()
+            results = []
+            for manga in r.json().get("data", []):
+                attrs = manga.get("attributes", {})
+                titles = attrs.get("title", {})
+                title = titles.get("en") or titles.get("ja-ro") or next(iter(titles.values()), "")
+                cover_url = None
+                for rel in manga.get("relationships", []):
+                    if rel["type"] == "cover_art":
+                        fname = rel.get("attributes", {}).get("fileName")
+                        if fname:
+                            cover_url = f"https://uploads.mangadex.org/covers/{manga['id']}/{fname}.256.jpg"
+                        break
+                results.append({
+                    "title": title,
+                    "cover_url": cover_url,
+                    "manga_id": manga["id"],
+                    "status": attrs.get("status", "").capitalize() or None,
+                })
+            return results
+    except Exception:
+        return []
+
+
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36"
 }

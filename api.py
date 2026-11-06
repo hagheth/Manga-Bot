@@ -15,7 +15,7 @@ from manga_db import (
     update_cover_url,
 )
 from ai import parse_message, chat_manga, recommend_manga
-from fetcher import fetch_manga_info, fetch_mangafire_url, fetch_manga_title
+from fetcher import fetch_manga_info, fetch_mangafire_url, fetch_manga_title, search_manga_titles
 
 load_dotenv()
 
@@ -262,6 +262,16 @@ def remove_manga(manga_id: int):
 
 
 # ── MangaDex info ──────────────────────────────────────────────────────────
+
+@app.get("/manga/discover/search")
+def discover_search(q: str, limit: int = 10):
+    """Search MangaDex by keyword for the Discover tab dropdown."""
+    results = search_manga_titles(q, limit)
+    for r in results:
+        if r.get("cover_url"):
+            r["cover_url"] = f"{RENDER_BASE}/proxy/image?url={quote(r['cover_url'], safe='')}"
+    return results
+
 
 @app.get("/mangainfo")
 def manga_info(title: str):
