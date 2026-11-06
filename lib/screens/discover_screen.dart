@@ -415,8 +415,25 @@ class _DetailSheet extends StatefulWidget {
 }
 
 class _DetailSheetState extends State<_DetailSheet> {
-  bool _adding = false, _added = false;
+  bool _adding = false, _added = false, _checkingLibrary = true;
   String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkIfAlreadyAdded();
+  }
+
+  Future<void> _checkIfAlreadyAdded() async {
+    try {
+      final library = await _api.getManga();
+      final titleLower = '${widget.rec['title'] ?? ''}'.toLowerCase().trim();
+      final alreadyIn = library.any((m) => m.title.toLowerCase().trim() == titleLower);
+      if (mounted) setState(() { _added = alreadyIn; _checkingLibrary = false; });
+    } catch (_) {
+      if (mounted) setState(() { _checkingLibrary = false; });
+    }
+  }
 
   Future<void> _addToLibrary() async {
     setState(() { _adding = true; _error = null; });
@@ -473,15 +490,17 @@ class _DetailSheetState extends State<_DetailSheet> {
           SizedBox(
             width: double.infinity, height: 50,
             child: ElevatedButton(
-              onPressed: _added || _adding ? null : _addToLibrary,
+              onPressed: (_added || _adding || _checkingLibrary) ? null : _addToLibrary,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1A1A1A), foregroundColor: Colors.white,
+                backgroundColor: _added ? Colors.grey[300] : const Color(0xFF1A1A1A),
+                foregroundColor: _added ? Colors.grey[600] : Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               ),
-              child: _adding
-                  ? const SizedBox(width: 20, height: 20,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : Text(_added ? 'Added to Library ✓' : 'Add to Library',
+              child: _adding || _checkingLibrary
+                  ? SizedBox(width: 20, height: 20,
+                      child: CircularProgressIndicator(
+                          color: _checkingLibrary ? Colors.grey : Colors.white, strokeWidth: 2))
+                  : Text(_added ? 'Already in Shelf ✓' : 'Add to Library',
                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
             ),
           ),
