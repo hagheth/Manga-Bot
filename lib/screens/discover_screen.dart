@@ -241,10 +241,13 @@ class _DiscoverGridState extends State<_DiscoverGrid> {
   final List<bool> _dragging = List.filled(_rowCount, false);
   // Prevents our own jumpTo calls from re-triggering the notification handler
   final List<bool> _cancelling = List.filled(_rowCount, false);
+  late final ScrollController _vertCtrl;
 
   @override
   void initState() {
     super.initState();
+    // Start scrolled so covers sit behind the island; pull down to reveal below it
+    _vertCtrl = ScrollController(initialScrollOffset: widget.topPad + 60);
     for (int i = 0; i < _rowCount; i++) {
       final goRight = i.isEven;
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -296,6 +299,7 @@ class _DiscoverGridState extends State<_DiscoverGrid> {
 
   @override
   void dispose() {
+    _vertCtrl.dispose();
     for (final c in _ctrls) c.dispose();
     super.dispose();
   }
@@ -317,7 +321,8 @@ class _DiscoverGridState extends State<_DiscoverGrid> {
     const cardH = cardW * 1.5;
 
     return ListView.builder(
-      padding: const EdgeInsets.only(top: 0, bottom: 100),
+      controller: _vertCtrl,
+      padding: EdgeInsets.only(top: widget.topPad + 60, bottom: 100),
       itemCount: _rowCount,
       itemBuilder: (_, rowIdx) {
         final start = rowIdx * _perRow;
