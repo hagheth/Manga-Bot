@@ -181,57 +181,55 @@ class _DiscoverGridState extends State<_DiscoverGrid> {
         return Padding(
           padding: const EdgeInsets.only(bottom: 4),
           child: SizedBox(
-          height: cardH + 4,
-          child: Listener(
-            // onPointerDown fires before the gesture arena — cancels animateTo
-            // so the tap recognizer can win cleanly.
-            onPointerDown: (_) => _cancelAnimation(rowIdx),
-            onPointerUp: (_) {
-              // If the user just tapped (no drag), resume after the tap completes.
-              if (!_dragging[rowIdx]) {
-                Future.delayed(const Duration(milliseconds: 400), () => _resume(rowIdx));
-              }
-            },
-            child: NotificationListener<ScrollNotification>(
-              onNotification: (n) {
-                if (_cancelling[rowIdx]) return false;
-                if (n is ScrollStartNotification && n.dragDetails != null) {
-                  _dragging[rowIdx] = true;
-                } else if (n is ScrollEndNotification && _dragging[rowIdx]) {
-                  _dragging[rowIdx] = false;
-                  Future.delayed(const Duration(milliseconds: 800), () => _resume(rowIdx));
+            height: cardH + 4,
+            child: Listener(
+              onPointerDown: (_) => _cancelAnimation(rowIdx),
+              onPointerUp: (_) {
+                if (!_dragging[rowIdx]) {
+                  Future.delayed(const Duration(milliseconds: 400), () => _resume(rowIdx));
                 }
-                return false;
               },
-              child: ListView.builder(
-              controller: _ctrls[rowIdx],
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              itemCount: row.length,
-              itemBuilder: (_, i) {
-                final rec = row[i];
-                final cover = rec['cover_url'] as String?;
-                final color = _palette[(rowIdx * _perRow + i) % _palette.length];
-                return GestureDetector(
-                  onTap: () => _showDetail(rec),
-                  child: Container(
-                    width: cardW,
-                    height: cardH,
-                    margin: const EdgeInsets.only(right: 4),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: cover != null
-                          ? Image.network(cover, fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => Container(color: color))
-                          : Container(color: color),
-                    ),
-                  ),
-                );
-              },
-            ),
+              child: NotificationListener<ScrollNotification>(
+                onNotification: (n) {
+                  if (_cancelling[rowIdx]) return false;
+                  if (n is ScrollStartNotification && n.dragDetails != null) {
+                    _dragging[rowIdx] = true;
+                  } else if (n is ScrollEndNotification && _dragging[rowIdx]) {
+                    _dragging[rowIdx] = false;
+                    Future.delayed(const Duration(milliseconds: 800), () => _resume(rowIdx));
+                  }
+                  return false;
+                },
+                child: ListView.builder(
+                  controller: _ctrls[rowIdx],
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  itemCount: row.length,
+                  itemBuilder: (_, i) {
+                    final rec = row[i];
+                    final cover = rec['cover_url'] as String?;
+                    final color = _palette[(rowIdx * _perRow + i) % _palette.length];
+                    return GestureDetector(
+                      onTap: () => _showDetail(rec),
+                      child: Container(
+                        width: cardW,
+                        height: cardH,
+                        margin: const EdgeInsets.only(right: 4),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: cover != null
+                              ? Image.network(cover, fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => Container(color: color))
+                              : Container(color: color),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
             ),
           ),
-          );
+        );
       },
     );
   }
