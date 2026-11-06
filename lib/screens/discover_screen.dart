@@ -317,7 +317,7 @@ class _DiscoverGridState extends State<_DiscoverGrid> {
     const cardH = cardW * 1.5;
 
     return ListView.builder(
-      padding: EdgeInsets.only(top: widget.topPad + 60, bottom: 100),
+      padding: const EdgeInsets.only(top: 0, bottom: 100),
       itemCount: _rowCount,
       itemBuilder: (_, rowIdx) {
         final start = rowIdx * _perRow;
