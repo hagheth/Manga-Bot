@@ -93,8 +93,18 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                   ]),
                 ),
                 data: (recs) => recs.isEmpty
-                    ? const Center(child: Text('Add manga to your library first!'))
-                    : _DiscoverGrid(recs: recs),
+                    ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+                        const Text('Could not load recommendations'),
+                        const SizedBox(height: 12),
+                        ElevatedButton(
+                          onPressed: () => ref.invalidate(recommendProvider),
+                          child: const Text('Retry'),
+                        ),
+                      ]))
+                    : RefreshIndicator(
+                        onRefresh: () async => ref.invalidate(recommendProvider),
+                        child: _DiscoverGrid(recs: recs),
+                      ),
               ),
             ),
           ),
