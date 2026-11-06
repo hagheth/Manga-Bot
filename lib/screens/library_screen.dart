@@ -270,10 +270,14 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                             onChanged: (v) => setState(() => _search = v.toLowerCase()),
                             style: const TextStyle(fontSize: 14, color: Colors.white),
                             cursorColor: Colors.white,
-                            decoration: const InputDecoration(
+                            decoration: InputDecoration(
                               hintText: 'Search shelf...',
-                              hintStyle: TextStyle(fontSize: 14, color: Colors.white38),
+                              hintStyle: const TextStyle(fontSize: 14, color: Colors.white38),
                               border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              filled: true,
+                              fillColor: Colors.transparent,
                               isDense: true,
                               contentPadding: EdgeInsets.zero,
                             ),
