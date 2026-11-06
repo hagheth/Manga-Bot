@@ -241,39 +241,38 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 GestureDetector(
                   onTap: () => _showAddOptions(context),
                   child: Container(
-                    width: 40,
-                    height: 40,
+                    width: 44,
+                    height: 44,
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.12), blurRadius: 10, offset: const Offset(0, 2))],
+                      color: const Color(0xFF1A1A1A),
+                      borderRadius: BorderRadius.circular(22),
                     ),
-                    child: const Icon(Icons.add, size: 20),
+                    child: const Icon(Icons.add, size: 22, color: Colors.white),
                   ),
                 ),
                 const SizedBox(width: 8),
                 // Search field island
                 Expanded(
                   child: Container(
-                    height: 40,
+                    height: 44,
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.12), blurRadius: 10, offset: const Offset(0, 2))],
+                      color: const Color(0xFF1A1A1A),
+                      borderRadius: BorderRadius.circular(22),
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Row(
                       children: [
-                        const Icon(Icons.search, size: 16, color: Colors.grey),
-                        const SizedBox(width: 6),
+                        const Icon(Icons.search, size: 16, color: Colors.white54),
+                        const SizedBox(width: 8),
                         Expanded(
                           child: TextField(
                             controller: _searchCtrl,
                             onChanged: (v) => setState(() => _search = v.toLowerCase()),
-                            style: const TextStyle(fontSize: 14),
+                            style: const TextStyle(fontSize: 14, color: Colors.white),
+                            cursorColor: Colors.white,
                             decoration: const InputDecoration(
                               hintText: 'Search shelf...',
-                              hintStyle: TextStyle(fontSize: 14, color: Colors.grey),
+                              hintStyle: TextStyle(fontSize: 14, color: Colors.white38),
                               border: InputBorder.none,
                               isDense: true,
                               contentPadding: EdgeInsets.zero,
@@ -283,7 +282,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                         if (_search.isNotEmpty)
                           GestureDetector(
                             onTap: () { _searchCtrl.clear(); setState(() => _search = ''); },
-                            child: const Icon(Icons.close, size: 16, color: Colors.grey),
+                            child: const Icon(Icons.close, size: 16, color: Colors.white54),
                           ),
                       ],
                     ),
@@ -294,14 +293,13 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 GestureDetector(
                   onTap: () => _showSortSheet(context),
                   child: Container(
-                    width: 40,
-                    height: 40,
+                    width: 44,
+                    height: 44,
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.12), blurRadius: 10, offset: const Offset(0, 2))],
+                      color: const Color(0xFF1A1A1A),
+                      borderRadius: BorderRadius.circular(22),
                     ),
-                    child: const Icon(Icons.sort, size: 20),
+                    child: const Icon(Icons.sort, size: 22, color: Colors.white),
                   ),
                 ),
               ],
