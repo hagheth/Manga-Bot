@@ -178,7 +178,9 @@ class _DiscoverGridState extends State<_DiscoverGrid> {
         if (start >= widget.recs.length) return const SizedBox.shrink();
         final row = widget.recs.sublist(start, end);
 
-        return SizedBox(
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 4),
+          child: SizedBox(
           height: cardH + 4,
           child: Listener(
             // onPointerDown fires before the gesture arena — cancels animateTo
@@ -229,7 +231,7 @@ class _DiscoverGridState extends State<_DiscoverGrid> {
             ),
             ),
           ),
-        );
+          );
       },
     );
   }
