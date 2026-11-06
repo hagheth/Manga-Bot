@@ -265,21 +265,31 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                         const Icon(Icons.search, size: 16, color: Colors.white54),
                         const SizedBox(width: 8),
                         Expanded(
-                          child: TextField(
-                            controller: _searchCtrl,
-                            onChanged: (v) => setState(() => _search = v.toLowerCase()),
-                            style: const TextStyle(fontSize: 14, color: Colors.white),
-                            cursorColor: Colors.white,
-                            decoration: InputDecoration(
-                              hintText: 'Search shelf...',
-                              hintStyle: const TextStyle(fontSize: 14, color: Colors.white38),
-                              border: InputBorder.none,
-                              enabledBorder: InputBorder.none,
-                              focusedBorder: InputBorder.none,
-                              filled: true,
-                              fillColor: Colors.transparent,
-                              isDense: true,
-                              contentPadding: EdgeInsets.zero,
+                          child: Theme(
+                            data: Theme.of(context).copyWith(
+                              textTheme: Theme.of(context).textTheme.apply(bodyColor: Colors.white),
+                              inputDecorationTheme: const InputDecorationTheme(
+                                border: InputBorder.none,
+                                filled: true,
+                                fillColor: Colors.transparent,
+                              ),
+                            ),
+                            child: TextField(
+                              controller: _searchCtrl,
+                              onChanged: (v) => setState(() => _search = v.toLowerCase()),
+                              style: const TextStyle(fontSize: 14, color: Colors.white),
+                              cursorColor: Colors.white,
+                              decoration: const InputDecoration(
+                                hintText: 'Search shelf...',
+                                hintStyle: TextStyle(fontSize: 14, color: Colors.white54),
+                                border: InputBorder.none,
+                                enabledBorder: InputBorder.none,
+                                focusedBorder: InputBorder.none,
+                                filled: true,
+                                fillColor: Colors.transparent,
+                                isDense: true,
+                                contentPadding: EdgeInsets.zero,
+                              ),
                             ),
                           ),
                         ),
