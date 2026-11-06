@@ -55,21 +55,7 @@ class DiscoverScreen extends ConsumerWidget {
             left: 0,
             right: 0,
             child: Center(
-              child: Container(
-                height: 38,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1A1A1A),
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.18),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Row(
+              child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     const Text('Discover',
