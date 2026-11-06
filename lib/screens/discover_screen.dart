@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/api_service.dart';
@@ -15,58 +16,185 @@ const _palette = [
   Color(0xFFFCBF49), Color(0xFF2D6A4F), Color(0xFFE84393), Color(0xFF3A86FF),
 ];
 
-class DiscoverScreen extends ConsumerWidget {
+class DiscoverScreen extends ConsumerStatefulWidget {
   final ValueNotifier<int>? tapNotifier;
   const DiscoverScreen({super.key, this.tapNotifier});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DiscoverScreen> createState() => _DiscoverScreenState();
+}
+
+class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
+  final _searchCtrl = TextEditingController();
+  final _focus = FocusNode();
+  List<Map<String, dynamic>> _suggestions = [];
+  bool _searching = false;
+  Timer? _debounce;
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    _focus.dispose();
+    _debounce?.cancel();
+    super.dispose();
+  }
+
+  void _onSearch(String q) {
+    _debounce?.cancel();
+    if (q.trim().isEmpty) {
+      setState(() { _suggestions = []; _searching = false; });
+      return;
+    }
+    setState(() => _searching = true);
+    _debounce = Timer(const Duration(milliseconds: 400), () async {
+      if (!mounted) return;
+      try {
+        final results = await _api.searchDiscover(q.trim());
+        if (mounted) setState(() { _suggestions = results; _searching = false; });
+      } catch (_) {
+        if (mounted) setState(() { _suggestions = []; _searching = false; });
+      }
+    });
+  }
+
+  void _clearSearch() {
+    _searchCtrl.clear();
+    _focus.unfocus();
+    setState(() { _suggestions = []; _searching = false; });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final async = ref.watch(recommendProvider);
     final topPad = MediaQuery.of(context).padding.top;
+    final showDropdown = _searching || _suggestions.isNotEmpty;
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: Stack(
         children: [
-          // Content — padded so rows don't hide under the island
-          Padding(
-            padding: EdgeInsets.only(top: topPad + 52),
-            child: async.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(
-                child: Column(mainAxisSize: MainAxisSize.min, children: [
-                  const Icon(Icons.error_outline, size: 48, color: Colors.grey),
-                  const SizedBox(height: 12),
-                  Text('Could not load', style: TextStyle(color: Colors.grey[600])),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () => ref.invalidate(recommendProvider),
-                    child: const Text('Retry'),
-                  ),
-                ]),
+          // Content
+          GestureDetector(
+            onTap: _clearSearch,
+            child: Padding(
+              padding: EdgeInsets.only(top: topPad + 52),
+              child: async.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (e, _) => Center(
+                  child: Column(mainAxisSize: MainAxisSize.min, children: [
+                    const Icon(Icons.error_outline, size: 48, color: Colors.grey),
+                    const SizedBox(height: 12),
+                    Text('Could not load', style: TextStyle(color: Colors.grey[600])),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () => ref.invalidate(recommendProvider),
+                      child: const Text('Retry'),
+                    ),
+                  ]),
+                ),
+                data: (recs) => recs.isEmpty
+                    ? const Center(child: Text('Add manga to your library first!'))
+                    : _DiscoverGrid(recs: recs),
               ),
-              data: (recs) => recs.isEmpty
-                  ? const Center(child: Text('Add manga to your library first!'))
-                  : _DiscoverGrid(recs: recs),
             ),
           ),
-          // Island bar
+          // Search island
           Positioned(
             top: topPad + 8,
-            left: 0,
-            right: 0,
-            child: Center(
+            left: 32,
+            right: 32,
+            child: Container(
+              height: 36,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF0F0F0),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 14),
               child: Row(
-                mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('Discover',
-                      style: TextStyle(
-                          color: Color(0xFF1A1A1A),
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15)),
+                  const Icon(Icons.search, size: 16, color: Colors.grey),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: TextField(
+                      controller: _searchCtrl,
+                      focusNode: _focus,
+                      onChanged: _onSearch,
+                      style: const TextStyle(fontSize: 14),
+                      decoration: const InputDecoration(
+                        hintText: 'Discover',
+                        hintStyle: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1A1A1A),
+                            fontSize: 14),
+                        border: InputBorder.none,
+                        isDense: true,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ),
+                  ),
+                  if (_searchCtrl.text.isNotEmpty)
+                    GestureDetector(
+                      onTap: _clearSearch,
+                      child: const Icon(Icons.close, size: 16, color: Colors.grey),
+                    ),
                 ],
               ),
             ),
           ),
+          // Dropdown results
+          if (showDropdown)
+            Positioned(
+              top: topPad + 8 + 36 + 6,
+              left: 32,
+              right: 32,
+              child: Material(
+                elevation: 6,
+                borderRadius: BorderRadius.circular(14),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: _searching
+                      ? const SizedBox(
+                          height: 56,
+                          child: Center(child: CircularProgressIndicator(strokeWidth: 2)))
+                      : ListView.builder(
+                          shrinkWrap: true,
+                          padding: EdgeInsets.zero,
+                          itemCount: _suggestions.length,
+                          itemBuilder: (_, i) {
+                            final m = _suggestions[i];
+                            final cover = m['cover_url'] as String?;
+                            return ListTile(
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                              leading: ClipRRect(
+                                borderRadius: BorderRadius.circular(6),
+                                child: cover != null
+                                    ? Image.network(cover, width: 36, height: 50, fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) => Container(width: 36, height: 50, color: Colors.grey[200]))
+                                    : Container(width: 36, height: 50, color: Colors.grey[200]),
+                              ),
+                              title: Text(m['title'] ?? '',
+                                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                                  maxLines: 2, overflow: TextOverflow.ellipsis),
+                              subtitle: m['status'] != null
+                                  ? Text('${m['status']}', style: TextStyle(fontSize: 11, color: Colors.grey[500]))
+                                  : null,
+                              onTap: () {
+                                _clearSearch();
+                                showModalBottomSheet(
+                                  context: context,
+                                  isScrollControlled: true,
+                                  backgroundColor: Colors.white,
+                                  shape: const RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+                                  builder: (_) => _DetailSheet(rec: m),
+                                );
+                              },
+                            );
+                          },
+                        ),
+                ),
+              ),
+            ),
         ],
       ),
     );

@@ -70,6 +70,11 @@ class ApiService {
 
   // ── Discover ───────────────────────────────────────────────────────────
 
+  Future<List<Map<String, dynamic>>> searchDiscover(String query) async {
+    final res = await _dio.get('/manga/discover/search', queryParameters: {'q': query});
+    return (res.data as List).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+  }
+
   Future<List<Map<String, dynamic>>> getRecommendations({bool refresh = false}) async {
     final params = refresh ? {'refresh': 'true'} : null;
     final res = await _dio.get('/manga/recommend/all', queryParameters: params);
