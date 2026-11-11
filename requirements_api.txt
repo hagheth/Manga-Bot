@@ -5,3 +5,4 @@ supabase
 groq
 httpx
 beautifulsoup4
+google-auth==2.37.0
