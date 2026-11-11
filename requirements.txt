@@ -4,3 +4,4 @@ supabase==2.9.1
 httpx==0.27.2
 beautifulsoup4==4.12.3
 groq==0.11.0
+google-auth==2.37.0

@@ -12,7 +12,7 @@ from manga_db import (
     add_manga, list_manga, search_manga, delete_manga,
     get_manga, update_chapter, update_status, update_note,
     update_url, update_title, update_rating, delete_manga_by_keyword,
-    update_cover_url,
+    update_cover_url, save_device_token, get_all_device_tokens,
 )
 from ai import parse_message, chat_manga, recommend_manga
 from fetcher import fetch_manga_info, fetch_mangafire_url, fetch_manga_title, search_manga_titles
@@ -53,6 +53,9 @@ class UpdateMangaRequest(BaseModel):
 
 class ChatRequest(BaseModel):
     message: str
+
+class DeviceTokenRequest(BaseModel):
+    token: str
 
 
 # ── Manga routes ───────────────────────────────────────────────────────────
@@ -301,6 +304,27 @@ def manga_cover(title: str):
     if not info or not info.get("cover_url"):
         raise HTTPException(status_code=404, detail="Cover not found")
     return RedirectResponse(url=info["cover_url"])
+
+
+# ── Push notifications ─────────────────────────────────────────────────────
+
+@app.post("/device-token", status_code=204)
+def register_device_token(body: DeviceTokenRequest):
+    """Store an FCM device token for push notifications."""
+    save_device_token(body.token)
+
+
+@app.post("/check-chapters")
+def check_chapters():
+    """
+    Check MangaDex for new chapters across all 'reading' manga and send push
+    notifications. Called by an external cron job (e.g. cron-job.org) every 6h.
+    """
+    from notifier import check_and_notify
+    manga_list = list_manga(USER_ID)
+    tokens = get_all_device_tokens()
+    result = check_and_notify(manga_list, tokens)
+    return result
 
 
 # ── AI Chat ────────────────────────────────────────────────────────────────

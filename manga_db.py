@@ -135,3 +135,16 @@ def update_note(user_id: int, manga_id: int, note: str):
         .execute()
     )
     return result.data[0] if result.data else None
+
+
+# ── Device tokens (push notifications) ────────────────────────────────────────
+
+def save_device_token(token: str):
+    """Upsert a device token into the device_tokens table."""
+    supabase.table("device_tokens").upsert({"token": token}).execute()
+
+
+def get_all_device_tokens() -> list[str]:
+    """Return all stored FCM device tokens."""
+    result = supabase.table("device_tokens").select("token").execute()
+    return [row["token"] for row in result.data]
