@@ -6,3 +6,4 @@ groq
 httpx
 beautifulsoup4
 google-auth==2.37.0
+requests==2.32.3
