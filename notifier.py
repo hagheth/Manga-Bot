@@ -33,16 +33,28 @@ def _latest_chapter_from_mangadex(title: str) -> str | None:
 
 def _send_fcm(tokens: list[str], title: str, body: str):
     """Send a push notification via FCM HTTP v1 API."""
+    import json
     import google.auth
     import google.auth.transport.requests
+    from google.oauth2 import service_account
 
-    service_account_file = os.getenv("FIREBASE_SERVICE_ACCOUNT_PATH", "firebase_service_account.json")
+    # Prefer JSON string env var (safe for Render); fall back to file path
+    sa_json = os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON")
+    sa_file = os.getenv("FIREBASE_SERVICE_ACCOUNT_PATH", "firebase_service_account.json")
 
     try:
-        credentials, project_id = google.auth.load_credentials_from_file(
-            service_account_file,
-            scopes=["https://www.googleapis.com/auth/firebase.messaging"],
-        )
+        if sa_json:
+            info = json.loads(sa_json)
+            credentials = service_account.Credentials.from_service_account_info(
+                info,
+                scopes=["https://www.googleapis.com/auth/firebase.messaging"],
+            )
+            project_id = info.get("project_id")
+        else:
+            credentials, project_id = google.auth.load_credentials_from_file(
+                sa_file,
+                scopes=["https://www.googleapis.com/auth/firebase.messaging"],
+            )
         credentials.refresh(google.auth.transport.requests.Request())
         access_token = credentials.token
     except Exception as e:
