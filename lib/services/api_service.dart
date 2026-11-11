@@ -81,6 +81,12 @@ class ApiService {
     return (res.data as List).map((e) => Map<String, dynamic>.from(e as Map)).toList();
   }
 
+  // ── Notifications ─────────────────────────────────────────────────────
+
+  Future<void> registerDeviceToken(String token) async {
+    await _dio.post('/device-token', data: {'token': token});
+  }
+
   // ── Chat ───────────────────────────────────────────────────────────────
 
   Future<Map<String, dynamic>> chat(String message) async {
