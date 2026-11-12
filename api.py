@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+from cache import cache_get, cache_set
 from manga_db import (
     add_manga, list_manga, search_manga, delete_manga,
     get_manga, update_chapter, update_status, update_note,
@@ -139,6 +140,14 @@ def get_recommendations(exclude: str = "", refresh: bool = False):
     if not refresh and not exclude_list and _rec_cache and (now - _rec_cache_time) < _REC_TTL:
         return _rec_cache
 
+    # Try Redis cache for base recommendations
+    if not refresh and not exclude_list:
+        redis_cached = cache_get("recommendations")
+        if redis_cached is not None:
+            _rec_cache = redis_cached
+            _rec_cache_time = now
+            return redis_cached
+
     manga_list = list_manga(USER_ID)
     recs = recommend_manga(manga_list, exclude_titles=exclude_list)
     for r in recs:
@@ -149,6 +158,7 @@ def get_recommendations(exclude: str = "", refresh: bool = False):
     if not exclude_list:
         _rec_cache = recs
         _rec_cache_time = now
+        cache_set("recommendations", recs, ex=3600)
 
     return recs
 
@@ -269,10 +279,15 @@ def remove_manga(manga_id: int):
 @app.get("/manga/discover/search")
 def discover_search(q: str, limit: int = 10):
     """Search MangaDex by keyword for the Discover tab dropdown."""
+    cache_key = f"discover:{q.lower().strip()}:{limit}"
+    cached = cache_get(cache_key)
+    if cached is not None:
+        return cached
     results = search_manga_titles(q, limit)
     for r in results:
         if r.get("cover_url"):
             r["cover_url"] = f"{RENDER_BASE}/proxy/image?url={quote(r['cover_url'], safe='')}"
+    cache_set(cache_key, results, ex=3600)
     return results
 
 
