@@ -33,35 +33,59 @@
   <link rel="manifest" href="manifest.json">
 </head>
 <style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
   #splash {
     position: fixed;
     inset: 0;
-    background: #ffffff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    background: #000;
+    overflow: hidden;
     z-index: 9999;
-    transition: opacity 0.4s ease;
-  }
-  #splash img {
-    width: 70%;
-    max-width: 320px;
+    transition: opacity 0.6s ease;
   }
   #splash.hide {
     opacity: 0;
     pointer-events: none;
   }
+  #splash-video {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    /* rotate landscape video to fill portrait screen */
+    transform: translate(-50%, -50%) rotate(90deg);
+    width: 100vh;
+    height: 100vw;
+    object-fit: cover;
+    filter: grayscale(100%);
+  }
 </style>
 <body>
   <div id="splash">
-    <img src="assets/assets/logo_title.webp" alt="Manga Bookmarks">
+    <video id="splash-video" autoplay muted playsinline>
+      <source src="splash.mp4" type="video/mp4">
+    </video>
   </div>
   <script src="flutter_bootstrap.js" async></script>
   <script>
-    window.addEventListener('flutter-first-frame', function () {
+    var splashDone = false;
+    function hideSplash() {
+      if (splashDone) return;
+      splashDone = true;
       var splash = document.getElementById('splash');
       splash.classList.add('hide');
-      setTimeout(function () { splash.remove(); }, 450);
+      setTimeout(function () { splash.remove(); }, 650);
+    }
+    // Fade out when video ends
+    document.getElementById('splash-video').addEventListener('ended', hideSplash);
+    // Also fade out when Flutter is ready (whichever comes last)
+    var flutterReady = false;
+    var videoEnded = false;
+    document.getElementById('splash-video').addEventListener('ended', function () {
+      videoEnded = true;
+      if (flutterReady) hideSplash();
+    });
+    window.addEventListener('flutter-first-frame', function () {
+      flutterReady = true;
+      if (videoEnded) hideSplash();
     });
   </script>
 </body>
