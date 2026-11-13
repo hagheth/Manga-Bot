@@ -193,7 +193,7 @@ class _StatsBodyState extends State<_StatsBody> {
                   const Icon(Icons.emoji_events, color: Colors.deepOrange, size: 24),
                   const SizedBox(height: 8),
                   Text(
-                    mostRead != null ? '${mostRead['chapter']}' : '—',
+                    mostRead != null ? 'Ch.${mostRead['chapter']}' : '—',
                     style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                   ),
                   Text(
