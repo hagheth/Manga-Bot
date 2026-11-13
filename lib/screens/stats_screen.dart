@@ -111,12 +111,16 @@ class _StatsBodyState extends State<_StatsBody> {
   @override
   Widget build(BuildContext context) {
     final stats = widget.stats;
-    final total     = stats['total']     ?? 0;
-    final reading   = stats['reading']   ?? 0;
-    final completed = stats['completed'] ?? 0;
-    final dropped   = stats['dropped']   ?? 0;
-    final avgRating = stats['avg_rating'];
-    final activity  = (stats['activity'] as Map<String, dynamic>?) ?? {};
+    final total         = stats['total']          ?? 0;
+    final reading       = stats['reading']        ?? 0;
+    final completed     = stats['completed']      ?? 0;
+    final dropped       = stats['dropped']        ?? 0;
+    final avgRating     = stats['avg_rating'];
+    final totalChapters = stats['total_chapters'] ?? 0;
+    final avgChapters   = stats['avg_chapters'];
+    final mostRead      = stats['most_read']  as Map<String, dynamic>?;
+    final topRated      = stats['top_rated']  as Map<String, dynamic>?;
+    final activity      = (stats['activity'] as Map<String, dynamic>?) ?? {};
 
     return ListView(
       controller: widget.scrollCtrl,
@@ -150,25 +154,97 @@ class _StatsBodyState extends State<_StatsBody> {
           _StatCard(label: 'Dropped',   value: '$dropped',   icon: Icons.cancel_outlined,       color: Colors.red),
         ]),
         const SizedBox(height: 12),
-        // Average rating
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(children: [
-              const Icon(Icons.star, color: Colors.amber, size: 32),
-              const SizedBox(width: 12),
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Text('Average Rating', style: TextStyle(color: Colors.grey)),
-                Text(
-                  avgRating != null
-                      ? '${(avgRating as num).toStringAsFixed(1)} / 10'
-                      : '— / 10',
-                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+        // Chapters row
+        Row(children: [
+          _StatCard(label: 'Chapters Read', value: '$totalChapters', icon: Icons.bookmark, color: Colors.orange),
+          const SizedBox(width: 12),
+          _StatCard(
+            label: 'Avg per Manga',
+            value: avgChapters != null ? '${(avgChapters as num).toStringAsFixed(1)}' : '—',
+            icon: Icons.trending_up,
+            color: Colors.teal,
+          ),
+        ]),
+        const SizedBox(height: 12),
+        // Average rating + most read row
+        Row(children: [
+          Expanded(
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  const Icon(Icons.star, color: Colors.amber, size: 24),
+                  const SizedBox(height: 8),
+                  Text(
+                    avgRating != null ? '${(avgRating as num).toStringAsFixed(1)} / 10' : '— / 10',
+                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                  ),
+                  const Text('Avg Rating', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                ]),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  const Icon(Icons.emoji_events, color: Colors.deepOrange, size: 24),
+                  const SizedBox(height: 8),
+                  Text(
+                    mostRead != null ? '${mostRead['chapter']}' : '—',
+                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    mostRead != null ? (mostRead['title'] as String).split(' ').take(3).join(' ') : 'Most Read',
+                    style: const TextStyle(color: Colors.grey, fontSize: 13),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ]),
+              ),
+            ),
+          ),
+        ]),
+        const SizedBox(height: 12),
+        // Top rated
+        if (topRated != null)
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(children: [
+                if (topRated['cover_url'] != null)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: Image.network(
+                      topRated['cover_url'] as String,
+                      width: 48, height: 68, fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const SizedBox(width: 48, height: 68),
+                    ),
+                  ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    const Text('Top Rated', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                    const SizedBox(height: 4),
+                    Text(
+                      topRated['title'] as String,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Row(children: [
+                      const Icon(Icons.star, color: Colors.amber, size: 16),
+                      const SizedBox(width: 4),
+                      Text('${topRated['rating']} / 10', style: const TextStyle(fontSize: 13)),
+                    ]),
+                  ]),
                 ),
               ]),
-            ]),
+            ),
           ),
-        ),
         const SizedBox(height: 12),
         // Activity calendar
         _buildCalendarCard(context, activity),
