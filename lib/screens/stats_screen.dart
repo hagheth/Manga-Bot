@@ -196,12 +196,14 @@ class _StatsBodyState extends State<_StatsBody> {
                     mostRead != null ? 'Ch.${mostRead['chapter']}' : '—',
                     style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                   ),
-                  Text(
-                    mostRead != null ? (mostRead['title'] as String).split(' ').take(3).join(' ') : 'Most Read',
-                    style: const TextStyle(color: Colors.grey, fontSize: 13),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  const Text('Most Read', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                  if (mostRead != null)
+                    Text(
+                      (mostRead['title'] as String).split(' ').take(3).join(' '),
+                      style: const TextStyle(fontSize: 11, color: Colors.grey),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                 ]),
               ),
             ),
