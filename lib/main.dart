@@ -9,8 +9,12 @@ import 'services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
-  await NotificationService.init();
+  try {
+    await Firebase.initializeApp();
+    await NotificationService.init();
+  } catch (_) {
+    // Firebase not supported on web — skip notifications
+  }
   runApp(const ProviderScope(child: MangaApp()));
 }
 
