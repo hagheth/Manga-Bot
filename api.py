@@ -258,20 +258,22 @@ def backfill_covers():
 @app.post("/manga/backfill-embeddings", status_code=200)
 def backfill_embeddings():
     """Generate and store embeddings for all manga missing one (for RAG)."""
-    from embedder import get_embedding, manga_text
+    from embedder import get_embeddings_batch, manga_text
     mangas = list_manga(USER_ID)
+    to_embed = [m for m in mangas if not m.get("embedding")]
+    already_done = len(mangas) - len(to_embed)
+    if not to_embed:
+        return {"updated": [], "skipped_already_has_embedding": already_done}
+    texts = [manga_text(m) for m in to_embed]
+    embeddings = get_embeddings_batch(texts)
+    if not embeddings:
+        return {"error": "Embedding API failed", "updated": [], "skipped_already_has_embedding": already_done}
     updated = []
-    skipped = []
-    for m in mangas:
-        if m.get("embedding"):
-            skipped.append(m["title"])
-            continue
-        text = manga_text(m)
-        emb = get_embedding(text)
+    for m, emb in zip(to_embed, embeddings):
         if emb:
             save_embedding(m["id"], emb)
             updated.append(m["title"])
-    return {"updated": updated, "skipped_already_has_embedding": len(skipped)}
+    return {"updated": updated, "skipped_already_has_embedding": already_done}
 
 
 @app.patch("/manga/{manga_id}")
