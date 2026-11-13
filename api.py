@@ -266,8 +266,16 @@ def backfill_embeddings():
         return {"updated": [], "skipped_already_has_embedding": already_done}
     texts = [manga_text(m) for m in to_embed]
     embeddings = get_embeddings_batch(texts)
-    if not embeddings:
-        return {"error": "Embedding API failed", "updated": [], "skipped_already_has_embedding": already_done}
+    if embeddings is None:
+        # Try one-by-one as fallback with smaller chunks
+        from embedder import get_embedding
+        updated = []
+        for m in to_embed:
+            emb = get_embedding(manga_text(m))
+            if emb:
+                save_embedding(m["id"], emb)
+                updated.append(m["title"])
+        return {"updated": updated, "skipped_already_has_embedding": already_done, "mode": "individual"}
     updated = []
     for m, emb in zip(to_embed, embeddings):
         if emb:

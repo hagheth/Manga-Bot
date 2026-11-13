@@ -30,10 +30,18 @@ def get_embeddings_batch(texts: list[str]) -> list[list[float]] | None:
                 headers={"Authorization": f"Bearer {HF_TOKEN}"},
                 json={"inputs": texts, "options": {"wait_for_model": True}},
             )
-            r.raise_for_status()
+            logger.info(f"HF API status={r.status_code} body[:120]={r.text[:120]!r}")
             result = r.json()
-            # HF returns [[vec1], [vec2], ...] for batch
-            if isinstance(result[0][0], list):
+            # HF returns error dict when model is loading or on error
+            if isinstance(result, dict):
+                logger.warning(f"HF API returned dict (not embeddings): {result}")
+                return None
+            if not result or not isinstance(result, list):
+                logger.warning(f"HF API unexpected response type: {type(result)}")
+                return None
+            # For batch: result is [[vec], [vec], ...] or [[float...], [float...]]
+            first = result[0]
+            if isinstance(first, list) and first and isinstance(first[0], list):
                 return [row[0] for row in result]
             return result
     except Exception as e:
