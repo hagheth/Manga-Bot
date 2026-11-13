@@ -148,3 +148,20 @@ def get_all_device_tokens() -> list[str]:
     """Return all stored FCM device tokens."""
     result = supabase.table("device_tokens").select("token").execute()
     return [row["token"] for row in result.data]
+
+
+# ── Vector embeddings (RAG) ────────────────────────────────────────────────────
+
+def save_embedding(manga_id: int, embedding: list[float]):
+    """Store a vector embedding for a manga row."""
+    supabase.table("manga").update({"embedding": embedding}).eq("id", manga_id).execute()
+
+
+def search_similar_manga(user_id: int, query_embedding: list[float], limit: int = 5) -> list:
+    """Find the most semantically similar manga using pgvector cosine similarity."""
+    result = supabase.rpc("match_manga", {
+        "query_embedding": query_embedding,
+        "match_user_id": user_id,
+        "match_count": limit,
+    }).execute()
+    return result.data or []

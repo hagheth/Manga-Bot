@@ -14,6 +14,7 @@ from manga_db import (
     get_manga, update_chapter, update_status, update_note,
     update_url, update_title, update_rating, delete_manga_by_keyword,
     update_cover_url, save_device_token, get_all_device_tokens,
+    save_embedding,
 )
 from ai import parse_message, chat_manga, recommend_manga
 from fetcher import fetch_manga_info, fetch_mangafire_url, fetch_manga_title, search_manga_titles
@@ -254,6 +255,25 @@ def backfill_covers():
     return {"updated": updated}
 
 
+@app.post("/manga/backfill-embeddings", status_code=200)
+def backfill_embeddings():
+    """Generate and store embeddings for all manga missing one (for RAG)."""
+    from embedder import get_embedding, manga_text
+    mangas = list_manga(USER_ID)
+    updated = []
+    skipped = []
+    for m in mangas:
+        if m.get("embedding"):
+            skipped.append(m["title"])
+            continue
+        text = manga_text(m)
+        emb = get_embedding(text)
+        if emb:
+            save_embedding(m["id"], emb)
+            updated.append(m["title"])
+    return {"updated": updated, "skipped_already_has_embedding": len(skipped)}
+
+
 @app.patch("/manga/{manga_id}")
 def update_manga(manga_id: int, body: UpdateMangaRequest):
     m = get_manga(USER_ID, manga_id)
@@ -365,7 +385,7 @@ def chat(body: ChatRequest):
 
     # For unknown / chat intents — return a conversational reply
     if intent in ("unknown", "chat"):
-        reply, emotion = chat_manga(body.message, mangas)
+        reply, emotion = chat_manga(body.message, mangas, user_id=USER_ID)
         return {"intent": "unknown", "reply": reply, "emotion": emotion}
 
     # For read-only intents — resolve and return data immediately
@@ -384,7 +404,7 @@ def chat(body: ChatRequest):
         return {"intent": "search", "data": results, "reply": parsed.get("reply", "")}
 
     if intent in ("suggest", "suggest_new"):
-        reply, emotion = chat_manga(body.message, mangas)
+        reply, emotion = chat_manga(body.message, mangas, user_id=USER_ID)
         return {"intent": intent, "reply": reply, "emotion": emotion}
 
     # For write intents — return parsed data for Flutter to confirm
