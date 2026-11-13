@@ -40,7 +40,14 @@
     background: #000;
     overflow: hidden;
     z-index: 9999;
+    /* stay invisible until video is ready — prevents any flash of unrotated content */
+    visibility: hidden;
+    opacity: 0;
     transition: opacity 0.6s ease;
+  }
+  #splash.ready {
+    visibility: visible;
+    opacity: 1;
   }
   #splash.hide {
     opacity: 0;
@@ -50,47 +57,39 @@
     position: absolute;
     top: 50%;
     left: 50%;
-    transform: translate(-50%, -50%) rotate(90deg);
-    /* swap axes so rotated video fills the portrait viewport */
+    transform: translate(-50%, -50%) rotate(-90deg);
     width: 100svh;
     height: 100svw;
-    min-width: 100svh;
-    min-height: 100svw;
     object-fit: cover;
     filter: grayscale(100%);
-    will-change: transform;
-    /* hide until ready to avoid first-frame flicker */
-    opacity: 0;
-    transition: opacity 0.2s ease;
-  }
-  #splash-video.ready {
-    opacity: 1;
   }
 </style>
 <body>
   <div id="splash">
-    <video id="splash-video" autoplay muted playsinline>
+    <video id="splash-video" autoplay muted playsinline preload="auto">
       <source src="splash.mp4" type="video/mp4">
     </video>
   </div>
   <script src="flutter_bootstrap.js" async></script>
   <script>
     var splashDone = false;
+    var splash = document.getElementById('splash');
+    var vid = document.getElementById('splash-video');
+
     function hideSplash() {
       if (splashDone) return;
       splashDone = true;
-      var splash = document.getElementById('splash');
       splash.classList.add('hide');
-      setTimeout(function () { splash.remove(); }, 650);
+      setTimeout(function () { splash.remove(); }, 700);
     }
+
+    // Only show the splash once the video is fully ready to paint — no unrotated flash
+    vid.addEventListener('canplaythrough', function () {
+      splash.classList.add('ready');
+    });
+
     var flutterReady = false;
     var videoEnded = false;
-    var vid = document.getElementById('splash-video');
-
-    // Show video only once it can play — avoids first-frame flicker
-    vid.addEventListener('canplay', function () {
-      vid.classList.add('ready');
-    });
 
     vid.addEventListener('ended', function () {
       videoEnded = true;
@@ -102,10 +101,8 @@
       if (videoEnded) hideSplash();
     });
 
-    // Fallback: if video fails to play, hide splash after 4s
-    setTimeout(function () {
-      if (!splashDone) hideSplash();
-    }, 6000);
+    // Hard fallback
+    setTimeout(function () { if (!splashDone) hideSplash(); }, 7000);
   </script>
 </body>
 </html>
