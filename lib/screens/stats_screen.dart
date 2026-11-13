@@ -160,7 +160,7 @@ class _StatsBodyState extends State<_StatsBody> {
           const SizedBox(width: 12),
           _StatCard(
             label: 'Avg per Manga',
-            value: avgChapters != null ? '${(avgChapters as num).toStringAsFixed(1)}' : '—',
+            value: avgChapters != null ? '${(avgChapters as num).toStringAsFixed(1)} ch' : '—',
             icon: Icons.trending_up,
             color: Colors.teal,
           ),
