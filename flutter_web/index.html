@@ -50,12 +50,21 @@
     position: absolute;
     top: 50%;
     left: 50%;
-    /* rotate landscape video to fill portrait screen */
     transform: translate(-50%, -50%) rotate(90deg);
-    width: 100vh;
-    height: 100vw;
+    /* swap axes so rotated video fills the portrait viewport */
+    width: 100svh;
+    height: 100svw;
+    min-width: 100svh;
+    min-height: 100svw;
     object-fit: cover;
     filter: grayscale(100%);
+    will-change: transform;
+    /* hide until ready to avoid first-frame flicker */
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  #splash-video.ready {
+    opacity: 1;
   }
 </style>
 <body>
@@ -74,19 +83,29 @@
       splash.classList.add('hide');
       setTimeout(function () { splash.remove(); }, 650);
     }
-    // Fade out when video ends
-    document.getElementById('splash-video').addEventListener('ended', hideSplash);
-    // Also fade out when Flutter is ready (whichever comes last)
     var flutterReady = false;
     var videoEnded = false;
-    document.getElementById('splash-video').addEventListener('ended', function () {
+    var vid = document.getElementById('splash-video');
+
+    // Show video only once it can play — avoids first-frame flicker
+    vid.addEventListener('canplay', function () {
+      vid.classList.add('ready');
+    });
+
+    vid.addEventListener('ended', function () {
       videoEnded = true;
       if (flutterReady) hideSplash();
     });
+
     window.addEventListener('flutter-first-frame', function () {
       flutterReady = true;
       if (videoEnded) hideSplash();
     });
+
+    // Fallback: if video fails to play, hide splash after 4s
+    setTimeout(function () {
+      if (!splashDone) hideSplash();
+    }, 6000);
   </script>
 </body>
 </html>
