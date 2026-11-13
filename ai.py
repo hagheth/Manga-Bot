@@ -177,27 +177,11 @@ def chat_manga(user_message: str, manga_list: list = None, user_id: int = None) 
     """Answer general manga questions conversationally. Returns (reply_text, emotion)."""
     context = ""
     if manga_list:
-        # Try RAG: retrieve only semantically relevant manga
-        rag_manga = None
-        if user_id is not None:
-            try:
-                from embedder import get_embedding
-                from manga_db import search_similar_manga
-                q_emb = get_embedding(user_message)
-                if q_emb:
-                    rag_manga = search_similar_manga(user_id, q_emb, limit=6)
-            except Exception as e:
-                logger.warning(f"RAG retrieval failed: {e}")
-
-        if rag_manga:
-            lines = [f"- {m['title']}: {m['status']}, chapter {m['chapter']}" for m in rag_manga]
-            context = "\n\nMost relevant manga from the user's library (retrieved by semantic search):\n" + "\n".join(lines)
-        else:
-            lines = []
-            for m in manga_list:
-                lines.append(f"- {m['title']}: {m['status']}, chapter {m['chapter']}, last updated {m.get('updated_at','')[:10]}")
-            context = "\n\nThe user's manga list (sorted by most recently updated first):\n" + "\n".join(lines)
-            context += f"\n\nMost recently updated manga: {manga_list[0]['title']} (chapter {manga_list[0]['chapter']})"
+        lines = []
+        for m in manga_list:
+            lines.append(f"- {m['title']}: {m['status']}, chapter {m['chapter']}, last updated {m.get('updated_at','')[:10]}")
+        context = "\n\nThe user's manga list (sorted by most recently updated first):\n" + "\n".join(lines)
+        context += f"\n\nMost recently updated manga: {manga_list[0]['title']} (chapter {manga_list[0]['chapter']})"
 
     response = client.chat.completions.create(
         model="openai/gpt-oss-20b",
