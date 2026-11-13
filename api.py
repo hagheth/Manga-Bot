@@ -169,6 +169,12 @@ def get_all_recommendations(refresh: bool = False):
     now = _time.time()
     if not refresh and _rec_cache and (now - _rec_cache_time) < _REC_TTL:
         return _rec_cache
+    if not refresh:
+        redis_cached = cache_get("recommendations:all")
+        if redis_cached is not None:
+            _rec_cache = redis_cached
+            _rec_cache_time = now
+            return redis_cached
     manga_list = list_manga(USER_ID)
     recs = recommend_manga(manga_list)
     for r in recs:
@@ -176,6 +182,7 @@ def get_all_recommendations(refresh: bool = False):
             r["cover_url"] = f"{RENDER_BASE}/proxy/image?url={quote(r['cover_url'], safe='')}"
     _rec_cache = recs
     _rec_cache_time = now
+    cache_set("recommendations:all", recs, ex=3600)
     return recs
 
 
