@@ -67,18 +67,45 @@
   #splash-video.ready {
     opacity: 1;
   }
+  #tap-to-start {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    cursor: pointer;
+  }
+  #tap-to-start img {
+    width: 55%;
+    max-width: 260px;
+    opacity: 0.9;
+  }
+  #tap-to-start span {
+    color: rgba(255,255,255,0.5);
+    font-size: 12px;
+    letter-spacing: 2px;
+    font-family: sans-serif;
+  }
+  #tap-to-start.hidden { display: none; }
 </style>
 <body>
   <div id="splash">
-    <video id="splash-video" autoplay muted playsinline preload="auto">
+    <video id="splash-video" muted playsinline preload="auto">
       <source src="splash.mp4" type="video/mp4">
     </video>
+    <div id="tap-to-start">
+      <img src="icons/Icon-512.png" alt="">
+      <span>TAP TO START</span>
+    </div>
   </div>
   <script src="flutter_bootstrap.js" async></script>
   <script>
     var splashDone = false;
     var splash = document.getElementById('splash');
     var vid = document.getElementById('splash-video');
+    var tapOverlay = document.getElementById('tap-to-start');
 
     function hideSplash() {
       if (splashDone) return;
@@ -86,12 +113,6 @@
       splash.classList.add('hide');
       setTimeout(function () { splash.remove(); }, 700);
     }
-
-    // Keep screen black until video is ready to paint
-    vid.addEventListener('canplaythrough', function () {
-      splash.classList.add('ready');
-      vid.classList.add('ready');
-    });
 
     var flutterReady = false;
     var videoEnded = false;
@@ -107,7 +128,40 @@
     });
 
     // Hard fallback
-    setTimeout(function () { if (!splashDone) hideSplash(); }, 7000);
+    setTimeout(function () { if (!splashDone) hideSplash(); }, 10000);
+
+    function startVideo() {
+      var promise = vid.play();
+      if (promise !== undefined) {
+        promise.then(function () {
+          // Autoplay succeeded — hide tap overlay, show video
+          tapOverlay.classList.add('hidden');
+          splash.classList.add('ready');
+          vid.classList.add('ready');
+        }).catch(function () {
+          // Autoplay blocked — show tap overlay, wait for gesture
+          splash.classList.add('ready');
+          tapOverlay.style.display = 'flex';
+        });
+      }
+    }
+
+    function onUserGesture() {
+      tapOverlay.classList.add('hidden');
+      vid.play().then(function () {
+        vid.classList.add('ready');
+      });
+      document.removeEventListener('touchstart', onUserGesture);
+      document.removeEventListener('click', onUserGesture);
+    }
+
+    tapOverlay.addEventListener('touchstart', onUserGesture);
+    tapOverlay.addEventListener('click', onUserGesture);
+
+    // Try autoplay immediately
+    vid.addEventListener('canplaythrough', startVideo, { once: true });
+    // Also try right away in case already cached
+    if (vid.readyState >= 4) startVideo();
   </script>
 </body>
 </html>
