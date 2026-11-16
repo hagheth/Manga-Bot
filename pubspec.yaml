@@ -68,6 +68,10 @@ flutter:
   assets:
     - assets/luffy_fat.png
     - assets/luffy_chibi.png
+    - assets/banner_reading.webp
+    - assets/banner_completed.png
+    - assets/banner_dropped.webp
+    - assets/logo_title.webp
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

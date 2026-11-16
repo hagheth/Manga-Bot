@@ -145,29 +145,11 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                   // ── Header ───────────────────────────────────────────────────
                   SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      const Text(
-                        'MANGA',
-                        style: TextStyle(
-                          fontSize: 42,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 2,
-                          height: 1.1,
-                        ),
-                      ),
-                      Text(
-                        'Bookmarks',
-                        style: TextStyle(
-                          fontSize: 13,
-                          letterSpacing: 1.5,
-                          color: Colors.grey[500],
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                  child: Image.asset(
+                    'assets/logo_title.webp',
+                    height: 165,
+                    fit: BoxFit.contain,
                   ),
                 ),
               ),
@@ -182,6 +164,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                   onScroll: _scroll,
                   scrollCtrl: _ctrl('reading'),
                   onChanged: () => ref.invalidate(mangaProvider),
+                  bannerAsset: 'assets/banner_reading.webp',
                 ),
               if (completed.isNotEmpty)
                 _SectionSliver(
@@ -192,6 +175,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                   onScroll: _scroll,
                   scrollCtrl: _ctrl('completed'),
                   onChanged: () => ref.invalidate(mangaProvider),
+                  bannerAsset: 'assets/banner_completed.png',
                 ),
               if (dropped.isNotEmpty)
                 _SectionSliver(
@@ -202,6 +186,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                   onScroll: _scroll,
                   scrollCtrl: _ctrl('dropped'),
                   onChanged: () => ref.invalidate(mangaProvider),
+                  bannerAsset: 'assets/banner_dropped.webp',
                 ),
               if (filtered.isEmpty)
                 const SliverFillRemaining(
@@ -485,6 +470,7 @@ class _SectionSliver extends StatelessWidget {
   final void Function(String, double) onScroll;
   final ScrollController scrollCtrl;
   final VoidCallback onChanged;
+  final String? bannerAsset;
 
   const _SectionSliver({
     required this.label,
@@ -494,6 +480,7 @@ class _SectionSliver extends StatelessWidget {
     required this.onScroll,
     required this.scrollCtrl,
     required this.onChanged,
+    this.bannerAsset,
   });
 
   @override
@@ -504,43 +491,85 @@ class _SectionSliver extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Section header
+            // Banner with count + arrows overlaid on top, label on bottom
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                children: [
-                  Container(
-                    width: 4,
-                    height: 18,
-                    margin: const EdgeInsets.only(right: 10),
-                    decoration: BoxDecoration(
-                      color: accentColor,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: SizedBox(
+                  height: 105,
+                  width: double.infinity,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Image.asset(
+                        bannerAsset ?? 'assets/banner_reading.webp',
+                        fit: BoxFit.cover,
+                        alignment: Alignment.center,
+                      ),
+                      Container(color: Colors.black.withOpacity(0.40)),
+                      // Label + accent bar bottom-left
+                      Positioned(
+                        left: 12,
+                        bottom: 10,
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Container(
+                              width: 3,
+                              height: 14,
+                              margin: const EdgeInsets.only(right: 6),
+                              decoration: BoxDecoration(
+                                color: accentColor,
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                            Text(
+                              label.toUpperCase(),
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 17,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 3,
+                                shadows: [Shadow(blurRadius: 8, color: Colors.black.withOpacity(0.7))],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Count + arrows bottom-right
+                      Positioned(
+                        right: 8,
+                        bottom: 6,
+                        child: Row(
+                          children: [
+                            Text(
+                              '${mangas.length} manga',
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            _NavArrow(
+                              icon: Icons.chevron_left,
+                              onTap: () => onScroll(scrollKey, -260),
+                              light: true,
+                            ),
+                            _NavArrow(
+                              icon: Icons.chevron_right,
+                              onTap: () => onScroll(scrollKey, 260),
+                              light: true,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  Text(
-                    label,
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    '${mangas.length} manga',
-                    style: TextStyle(fontSize: 13, color: Colors.grey[400]),
-                  ),
-                  const Spacer(),
-                  _NavArrow(
-                    icon: Icons.chevron_left,
-                    onTap: () => onScroll(scrollKey, -260),
-                  ),
-                  const SizedBox(width: 4),
-                  _NavArrow(
-                    icon: Icons.chevron_right,
-                    onTap: () => onScroll(scrollKey, 260),
-                  ),
-                ],
+                ),
               ),
             ),
-            const SizedBox(height: 14),
             // Horizontal scroll
             SizedBox(
               height: 273,
@@ -566,13 +595,14 @@ class _SectionSliver extends StatelessWidget {
 class _NavArrow extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
-  const _NavArrow({required this.icon, required this.onTap});
+  final bool light;
+  const _NavArrow({required this.icon, required this.onTap, this.light = false});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Icon(icon, size: 22, color: Colors.black),
+      child: Icon(icon, size: 22, color: light ? Colors.white : Colors.black),
     );
   }
 }
