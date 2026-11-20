@@ -127,32 +127,25 @@
 
     setTimeout(function () { if (!splashDone) hideSplash(); }, 10000);
 
-    function playVideo() {
-      return vid.play().then(function () {
-        tapOverlay.classList.add('hidden');
-        vid.classList.add('ready');
-      });
-    }
-
-    function onUserGesture() {
-      tapOverlay.classList.add('hidden');
-      document.removeEventListener('touchstart', onUserGesture);
-      document.removeEventListener('click', onUserGesture);
-      // load() resets readyState so iOS will buffer after gesture
-      vid.load();
-      vid.addEventListener('canplaythrough', function () {
-        playVideo();
-      }, { once: true });
-    }
-
-    tapOverlay.addEventListener('touchstart', onUserGesture);
-    tapOverlay.addEventListener('click', onUserGesture);
-
-    // Try autoplay — works on Android/desktop/PWA-with-media-session
-    vid.play().then(function () {
+    // Fade video in once the first frame is actually rendering
+    vid.addEventListener('playing', function () {
       tapOverlay.classList.add('hidden');
       vid.classList.add('ready');
-    }).catch(function () {
+    }, { once: true });
+
+    function onUserGesture() {
+      document.removeEventListener('touchstart', onUserGesture);
+      document.removeEventListener('click', onUserGesture);
+      tapOverlay.classList.add('hidden');
+      // Must call play() synchronously inside the gesture handler on iOS
+      vid.play().catch(function () {});
+    }
+
+    tapOverlay.addEventListener('touchstart', onUserGesture, { passive: true });
+    tapOverlay.addEventListener('click', onUserGesture);
+
+    // Try autoplay — works on Android/desktop
+    vid.play().catch(function () {
       // Autoplay blocked (iOS Safari) — show tap-to-start overlay
       tapOverlay.classList.remove('hidden');
     });
