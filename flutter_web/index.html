@@ -102,9 +102,6 @@
     var vid = document.getElementById('splash-video');
     var tapOverlay = document.getElementById('tap-to-start');
 
-    // Hide tap overlay by default — show only if autoplay is blocked
-    tapOverlay.classList.add('hidden');
-
     var flutterReady = false;
     var videoEnded = false;
 
@@ -136,7 +133,6 @@
     function onUserGesture() {
       document.removeEventListener('touchstart', onUserGesture);
       document.removeEventListener('click', onUserGesture);
-      tapOverlay.classList.add('hidden');
       // Must call play() synchronously inside the gesture handler on iOS
       vid.play().catch(function () {});
     }
@@ -144,11 +140,13 @@
     tapOverlay.addEventListener('touchstart', onUserGesture, { passive: true });
     tapOverlay.addEventListener('click', onUserGesture);
 
-    // Try autoplay — works on Android/desktop
-    vid.play().catch(function () {
-      // Autoplay blocked (iOS Safari) — show tap-to-start overlay
-      tapOverlay.classList.remove('hidden');
-    });
+    // Try autoplay — if it works (Android/desktop), hide the tap overlay
+    var autoplayPromise = vid.play();
+    if (autoplayPromise !== undefined) {
+      autoplayPromise.catch(function () {
+        // Autoplay blocked — tap overlay is already visible, nothing to do
+      });
+    }
   </script>
 </body>
 </html>
