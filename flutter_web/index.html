@@ -40,14 +40,9 @@
     background: #000;
     overflow: hidden;
     z-index: 9999;
-    /* stay invisible until video is ready — prevents any flash of unrotated content */
-    visibility: hidden;
-    opacity: 0;
-    transition: opacity 0.6s ease;
-  }
-  #splash.ready {
     visibility: visible;
     opacity: 1;
+    transition: opacity 0.6s ease;
   }
   #splash.hide {
     opacity: 0;
@@ -107,15 +102,18 @@
     var vid = document.getElementById('splash-video');
     var tapOverlay = document.getElementById('tap-to-start');
 
+    // Hide tap overlay by default — show only if autoplay is blocked
+    tapOverlay.classList.add('hidden');
+
+    var flutterReady = false;
+    var videoEnded = false;
+
     function hideSplash() {
       if (splashDone) return;
       splashDone = true;
       splash.classList.add('hide');
       setTimeout(function () { splash.remove(); }, 700);
     }
-
-    var flutterReady = false;
-    var videoEnded = false;
 
     vid.addEventListener('ended', function () {
       videoEnded = true;
@@ -127,41 +125,37 @@
       if (videoEnded) hideSplash();
     });
 
-    // Hard fallback
     setTimeout(function () { if (!splashDone) hideSplash(); }, 10000);
 
-    function startVideo() {
-      var promise = vid.play();
-      if (promise !== undefined) {
-        promise.then(function () {
-          // Autoplay succeeded — hide tap overlay, show video
-          tapOverlay.classList.add('hidden');
-          splash.classList.add('ready');
-          vid.classList.add('ready');
-        }).catch(function () {
-          // Autoplay blocked — show tap overlay, wait for gesture
-          splash.classList.add('ready');
-          tapOverlay.style.display = 'flex';
-        });
-      }
+    function playVideo() {
+      return vid.play().then(function () {
+        tapOverlay.classList.add('hidden');
+        vid.classList.add('ready');
+      });
     }
 
     function onUserGesture() {
       tapOverlay.classList.add('hidden');
-      vid.play().then(function () {
-        vid.classList.add('ready');
-      });
       document.removeEventListener('touchstart', onUserGesture);
       document.removeEventListener('click', onUserGesture);
+      // load() resets readyState so iOS will buffer after gesture
+      vid.load();
+      vid.addEventListener('canplaythrough', function () {
+        playVideo();
+      }, { once: true });
     }
 
     tapOverlay.addEventListener('touchstart', onUserGesture);
     tapOverlay.addEventListener('click', onUserGesture);
 
-    // Try autoplay immediately
-    vid.addEventListener('canplaythrough', startVideo, { once: true });
-    // Also try right away in case already cached
-    if (vid.readyState >= 4) startVideo();
+    // Try autoplay — works on Android/desktop/PWA-with-media-session
+    vid.play().then(function () {
+      tapOverlay.classList.add('hidden');
+      vid.classList.add('ready');
+    }).catch(function () {
+      // Autoplay blocked (iOS Safari) — show tap-to-start overlay
+      tapOverlay.classList.remove('hidden');
+    });
   </script>
 </body>
 </html>
